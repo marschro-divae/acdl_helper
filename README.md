@@ -131,6 +131,7 @@ Provided standard plugins are:
 
 - [cleanup](/src/plugins/cleanup/README.md)
 - [clickables](/src/plugins/clickables/README.md)
+- [component](/src/plugins/component/README.md)
 - [page](/src/plugins/page/README.md)
 - [user](/src/plugins/user/README.md)
 - [usercentrics](/src/plugins/usercentrics/README.md)
