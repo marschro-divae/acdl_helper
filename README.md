@@ -52,39 +52,82 @@ DONE ! - go visit [localhost:3000](http://localhost:3000)
 ### 4. Test 
 TODO !
 
-## 04 - Usage and core api
+## 04 - Usage and Core API
 ---
+
+### Initialization
 The `acdl_helper` library is available at the global ```window``` object. 
-The library has to be instantiated and configures before its first usage
+The library has to be instantiated and configures before its first usage.
 ```javascript
+// Example config object
 const config = {
   env: 'development',
   event_prefix: 'acdl_helper',
   dependencies: ['launch:loaded'],
-  plugins: []
+  plugins: [
+    { page: }
+  ]
 }
 acdl_helper(config)
 ```
 
+**Config options**
+- `env`
+  - default: **development**
+  - description: if set to development, you get a bunch of log messages
+
+
+- `event_prefix`
+  - default: **acdl_helper**
+  - description: defines the prefix for events, pushed by the lib to the dataLayer
+
+
+- `dependencies`
+  - default: **['launch:loaded']**
+  - description: Array of events that should all be received, before initialization
+  - remark: Setting this, completely overrides the default (no merge)
+
+
+- `plugins`:
+  - default: **[]**
+  - description: Array of plugins to be used
+  - remark: Plugins are configured as objects with plugin-identifier as key and config oject as value
+
+
 Right after initialization, `window.acdl_helper` provides it core functionality and plugins (if installed and configured) 
 
-The singleton exposes two different kind of functionality: Functionality, that needs the current ```event```, that it should act on. Those functionalities are served after passing the current event to the event *catcher* method. 
+### Core API
+The core of the `acdl_helper` basically provides one simple function `catch()` which *catches* the current adobeDataLayer push-event, mostly received in the Adobe Launch event-lifecycle by the [Adobe Client Data Layer Extension](https://exchange.adobe.com/apps/ec/104231).
 
-For example, setting the emitter of the currently handled event as the page reference, we first have to catch the event, before acting on it:
-```acdl_helper.singleton().catch(event).set_page_reference()```
+After catching the event, the returned `get()` function provides the state of the component, that emitted the event - this could be any component (also the page, which is just a special component)
 
-Also, the singleton exposes functionality that does not need an event but acts on general tracking data, such as the consent or the page informations
+```javascript
+  acdl_helper.catch(event).get() // returns full state of the component
+  acdl_helper.catch(event).get('dc:title') // returns the field 'dc:title' from emitting component
+  acdl_helper.catch(event).get({ '@type': '*/components/page/content'}, 'dc:title') // only gets the 'dc:title' if the test-object provided as first argument is fullfilled
+```
+Where and when to use? - i.e. the `adcl_helper` can be used in custom code blocks in Launch, when setting a *Data Element*, or in any other custom code block, where we need to extract data from the dataLayer or the dataLayer-event.
+
+This leverages the complexity, to figure out the *pathInfo* from the event and get the state of the emitting component by its *pathInfo* value (which creates a lot of redundant boilerplate custom code in Launch). We now can do this in just one simple function call. This is as convenient as getting the `event.detail` which we are used to when dealing with CustomEvents.
+
+**⚠️ BEWARE** - This all makes only sense, if you catch *dataLayer-events*. Other events like native click events have nothing to do with *dataLayer-events* and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native events.
 
 ## 05 - PLUGINS
+Project specific behaviour should be provided as custom plugin.
+Feel free, to contribute to this repo with you custom plugin :)
 
-Provided standard libraries are: 
+  ```javascript
+  // Example for 'page' plugin
+  acdl_helper.page // the namespace of the 'page' plugin
+  acdl_helper.page.get() // example for a provided function of the 'page' plugin
+  ```
+Plugins that provide functionalities are available in their namespace (plugin identifier).  
+Usage and documentation on plugins is found in the plugin documentation.
+
+Provided standard plugins are: 
 
 - [cleanup](/src/plugins/cleanup/README.md)
 - [clickables](/src/plugins/clickables/README.md)
 - [page](/src/plugins/page/README.md)
 - [user](/src/plugins/user/README.md)
 - [usercentrics](/src/plugins/usercentrics/README.md)
-
-Project specific behaviour should be provided as custom plugin
-Feel also free, to contribute to nthis repo with you custom plugin :)
-

@@ -143,7 +143,7 @@ function get_component_state (app) {
 
 }
 
-// TODO: refactor thie by extracting the function in the ternary - but implement tests first!
+// TODO: refactor this by extracting the function in the ternary - but implement tests first!
 function get_component_data (e, resolver) {
   if (!e) return undefined
   if (Object.prototype.hasOwnProperty.call(e, 'eventInfo') && Object.prototype.hasOwnProperty.call(e.eventInfo, 'path')) {
