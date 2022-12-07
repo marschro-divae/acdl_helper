@@ -3,21 +3,21 @@
 ## 01 - PURPOSE
 ___
 The [Adobe Client Data Layer (ADCL)](https://github.com/adobe/adobe-client-data-layer) is part of the wcm core components by Adobe.
-The ACDL is an event-driven call-stack storage. Everything that happens on a website, like the page-load itself, user-behaviour like clicks or results from more complex components (configrators etc.) should be pushed as events to the ACDL array.
+The ACDL is an event-driven call-stack storage. Everything that happens on a website, like the page-load itself, user-behaviour like clicks or results from more complex components (configurators etc.) should be pushed as events to the ACDL array.
 
 
 The main advantage of this approach is, that there is a state of events and probably more relavant, we can handle the often frustrating asynchrony of dependencies and things that could happen on modern websistes.
 
 
-As the ACDL itself does not handle dependencies an integrations for us, avery project has to implement additional glue-code that binds things together. In order to make this a bit more conventient this library tries to provide some of the most used convenience features and functionalities.
+As the ACDL itself does not handle dependencies an integrations for us, every project has to implement additional glue-code that binds things together. In order to make this a bit more convenient this library tries to provide some of the most used convenience features and functionalities.
 
 
 ## 02 - ARCHITECTURE
 ___
-- This Library is independant and has to brought to the project as simple clientlib, which is integrated via the base page template of the project (i.e. customfooterlibs.html).
+- This Library is independant and has to be brought to the project as simple clientlib, which is integrated via the base page template of the project (i.e. customfooterlibs.html).
 - The library provides core functionalities and some basic plugins.
 - Every additional or project specific implementation has to be implemented via plugins.
-- The library is **not** persistent over several server-roundtrips and as such, does not solve problems in single-page applications.
+- The library is **not** persistent over several server-roundtrips and as such does not solve problems in single-page applications.
 
 
 ## 03 - DEVELOPMENT SETUP
@@ -97,7 +97,7 @@ acdl_helper(config)
   - remark: Plugins are configured as objects with plugin-identifier as key and config oject as value
 
 
-Right after initialization, `window.acdl_helper` provides it core functionality and plugins (if installed and configured) 
+Right after initialization, `window.acdl_helper` provides its core functionality and plugins (if installed and configured) 
 
 ### Core API
 The core of the `acdl_helper` basically provides one simple function `catch()` which *catches* the current adobeDataLayer push-event, mostly received in the Adobe Launch event-lifecycle by the [Adobe Client Data Layer Extension](https://exchange.adobe.com/apps/ec/104231).
@@ -111,9 +111,9 @@ After catching the event, the returned `get()` function provides the state of th
 ```
 Where and when to use? - i.e. the `adcl_helper` can be used in custom code blocks in Launch, when setting a *Data Element*, or in any other custom code block, where we need to extract data from the dataLayer or the dataLayer-event.
 
-This leverages the complexity, to figure out the *pathInfo* from the event and get the state of the emitting component by its *pathInfo* value (which creates a lot of redundant boilerplate custom code in Launch). We now can do this in just one simple function call. This is as convenient as getting the `event.detail` which we are used to when dealing with CustomEvents.
+This leverages the complexity to figure out the *pathInfo* from the event and get the state of the emitting component by its *pathInfo* value (which creates a lot of redundant boilerplate custom code in Launch). We now can do this in just one simple function call. This is as convenient as getting the `event.detail` which we are used to when dealing with CustomEvents.
 
-**⚠️ BEWARE** - This all makes only sense, if you catch *dataLayer-events*. Other events like native click events have nothing to do with *dataLayer-events* and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native events.
+**⚠️ BEWARE** - All this only makes sense, if you catch *dataLayer-events*. Other events like native click events have nothing to do with *dataLayer-events* and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native events.
 
 ## 05 - PLUGINS
 Project specific behaviour should be provided as custom plugin.
