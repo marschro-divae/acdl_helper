@@ -1,0 +1,31 @@
+{
+  "name": "acdl_helper",
+  "version": "0.9.0",
+  "description": "Helper Library for the Adobe Client Data Layer",
+  "private": true,
+  "type": "module",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node test/main.js",
+    "prod": "npm-run-all --parallel build:prod watch:server ",
+    "dev": "npm-run-all --parallel watch:server watch:build",
+    "watch:build": "webpack --mode=development --watch",
+    "watch:server": "nodemon server/app.js --watch 'server/**/*' -e js,ejs",
+    "build:prod": "webpack --mode=production"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "ejs": "^3.1.8",
+    "eslint": "^8.28.0",
+    "express": "^4.18.2",
+    "ignore-loader": "^0.1.2",
+    "nodemon": "^2.0.20",
+    "npm-run-all": "^4.1.5",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.0"
+  }
+}
