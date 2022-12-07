@@ -57,7 +57,7 @@ TODO !
 
 ### Initialization
 The `acdl_helper` library is available at the global ```window``` object. 
-The library has to be instantiated and configures before its first usage.
+The library has to be instantiated and configured before its first usage.
 ```javascript
 // Example config object
 const config = {
@@ -65,7 +65,10 @@ const config = {
   event_prefix: 'acdl_helper',
   dependencies: ['launch:loaded'],
   plugins: [
-    { page: }
+    page: {
+      component_types: [{ '@type': '*/components/page*' }],
+      page_load_event: 'load'
+	  }
   ]
 }
 acdl_helper(config)

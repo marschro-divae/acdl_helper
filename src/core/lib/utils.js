@@ -10,6 +10,7 @@ export default Object.freeze({
   update_object,
   get_component_state,
   get_component_data,
+  message,
   acdl
 })
 

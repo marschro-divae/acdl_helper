@@ -18,12 +18,12 @@ A configurable Protocol, which matches *Usercentrics Service-Names* with `adobe.
 // Example
 plugins: [
   usercentrics: {
-      protocol: {
-        'Adobe Analytics': 'ANALYTICS',
-        'Adobe Target': 'TARGET'
-      },
-      push_after: 'acdl_helper:cleanup'
+    protocol: {
+      'Adobe Analytics': 'ANALYTICS',
+      'Adobe Target': 'TARGET'
     },
+    push_after: 'acdl_helper:cleanup'
+  },
 ]
 
 // => result

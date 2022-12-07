@@ -15,10 +15,10 @@ In order to use the mcid property (Marketing Cloud Id), the plugin has to be con
 // Example
 plugins: [
   user: {
-      adobe_org_id: 'your_org_id',
-      tracking_server: 'your_tracking_server', // without protocol
-      default_name: 'Anonymous'
-    }
+    adobe_org_id: 'your_org_id',
+    tracking_server: 'your_tracking_server', // without protocol
+    default_name: 'Anonymous'
+  }
 ]
 
 // => result
