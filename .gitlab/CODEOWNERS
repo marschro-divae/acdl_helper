@@ -6,7 +6,7 @@
 / @martin.schroeter
 
 # All group members as Code Owners for a file
-filename @groupname
+# filename @groupname
 
 # All group members as Code Owners for a directory
-directoryname/ @groupname
+# directoryname/ @groupname
