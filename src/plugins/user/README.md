@@ -1,6 +1,7 @@
 # Plugin - user
 
 ## Description
+
 This plugin simply adds a user property to the adobeDataLayer.
 It provides properties like `name`, `mcid` and `local_segments`.
 
@@ -11,6 +12,7 @@ In order to use the mcid property (Marketing Cloud Id), the plugin has to be con
 - `events`: none
 
 ## Installation & Config
+
 ```javascript
 // Example
 plugins: [
@@ -26,10 +28,10 @@ plugins: [
 ```
 
 ## Providers
+
 ```javascript
 acdl_helper.user.get() // return user properties
-acdl_helper.user.add_segment('Funny Segment') // add segment to 'local_segments' property
-acdl_helper.user.remove_segment('Funny Segment') // removes the given segment
+acdl_helper.user.add_segment("Funny Segment") // add segment to 'local_segments' property
+acdl_helper.user.remove_segment("Funny Segment") // removes the given segment
 acdl_helper.user.clear_segments() // clears all segments
-
 ```

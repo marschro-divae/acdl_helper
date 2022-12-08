@@ -1,10 +1,6 @@
-export default function setup_clickables (context) {
+export default function setup_clickables(context) {
   return function (args) {
-    const {
-      selector = null,
-      event_name = 'cmp:click',
-      delay = 0
-    } = args
+    const { selector = null, event_name = "cmp:click", delay = 0 } = args
 
     const link_click_delay = function (event, element) {
       if (delay !== 0) {
@@ -30,32 +26,30 @@ export default function setup_clickables (context) {
       }
     }
 
-    addCustomEventListener(selector, 'click', link_click_delay)
+    addCustomEventListener(selector, "click", link_click_delay)
   }
 }
 
-function addCustomEventListener (selector, event, fn) {
-  const rootElement = document.querySelector('body')
+function addCustomEventListener(selector, event, fn) {
+  const rootElement = document.querySelector("body")
   rootElement.addEventListener(
     event,
     function (e) {
-      const targetElement = e.target.matches(selector)
-        ? e.target
-        : e.target.closest(selector)
+      const targetElement = e.target.matches(selector) ? e.target : e.target.closest(selector)
       if (targetElement) fn(e, targetElement)
       return
-    }, true)
+    },
+    true
+  )
 }
 
-function parseDataLayer (element) {
-  const parseJSON = maybeJson => {
+function parseDataLayer(element) {
+  const parseJSON = (maybeJson) => {
     try {
       return JSON.parse(maybeJson)
     } catch (err) {
       return undefined
     }
   }
-  return element?.dataset?.cmpDataLayer
-    ? parseJSON(element.dataset.cmpDataLayer)
-    : undefined
+  return element?.dataset?.cmpDataLayer ? parseJSON(element.dataset.cmpDataLayer) : undefined
 }

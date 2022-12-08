@@ -1,7 +1,7 @@
 export default {
-  entry: './src/core/index.js',
+  entry: "./src/core/index.js",
   output: {
-    filename: 'acdl_helper.js',
+    filename: "acdl_helper.js",
     clean: true,
   },
   module: {
@@ -14,7 +14,7 @@ export default {
       },
       {
         test: /\.md$/,
-        loader: 'ignore-loader'
+        loader: "ignore-loader",
       },
     ],
   },

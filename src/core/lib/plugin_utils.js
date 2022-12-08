@@ -1,5 +1,5 @@
-import * as STATICS from './statics'
-import utils from './utils'
+import * as STATICS from "./statics"
+import utils from "./utils"
 
 export default {
   load_plugins,
@@ -16,37 +16,48 @@ export default {
  * - example how a plugin has to be implemented: see usercentrics plugin in `../plugins/usercentrics.js`
  *
  */
-async function load_plugins (app) {
+async function load_plugins(app) {
   if (!utils.is_object(app.config.plugins)) {
-    throw TypeError(utils.message('Plugins are expected to be an object with key (plugin-id) and value (plugin config object)').as_error)
+    throw TypeError(
+      utils.message("Plugins are expected to be an object with key (plugin-id) and value (plugin config object)")
+        .as_error
+    )
   }
 
   const plugin_list = Object.keys(app.config.plugins)
 
-  const { plugins, dependencies } = await Promise.all(plugin_list.map(async (plugin_name) => {
-    try {
-      const plugin_module = await import(`../../plugins/${plugin_name}`)
-      const plugin = plugin_module.default()
-      const maybe_custom_config_for_plugin = utils.is_object(app.config.plugins[plugin_name]) && app.config.plugins[plugin_name]
-      plugin.config = Object.freeze({
-        ...plugin.meta.config,
-        ...maybe_custom_config_for_plugin,
-      })
-      return plugin
-    } catch (err) {
-      app.logger.error(`Plugin "${plugin_name}" not found!`, err)
-      return
-    }
-  })).then((plugins_array) => {
-    return plugins_array.reduce((acc, plugin) => {
-      if (!plugin) return acc
-      acc.plugins[plugin.meta.name] = plugin
-      acc.dependencies.push(plugin.meta.dependencies)
-      return acc
-    }, { plugins: {}, dependencies: [] })
-  }).catch((_err) => {
-    throw Error(utils.message('Something went incredibly wrong during plugin loading...').as_error)
-  })
+  const { plugins, dependencies } = await Promise.all(
+    plugin_list.map(async (plugin_name) => {
+      try {
+        const plugin_module = await import(`../../plugins/${plugin_name}`)
+        const plugin = plugin_module.default()
+        const maybe_custom_config_for_plugin =
+          utils.is_object(app.config.plugins[plugin_name]) && app.config.plugins[plugin_name]
+        plugin.config = Object.freeze({
+          ...plugin.meta.config,
+          ...maybe_custom_config_for_plugin,
+        })
+        return plugin
+      } catch (err) {
+        app.logger.error(`Plugin "${plugin_name}" not found!`, err)
+        return
+      }
+    })
+  )
+    .then((plugins_array) => {
+      return plugins_array.reduce(
+        (acc, plugin) => {
+          if (!plugin) return acc
+          acc.plugins[plugin.meta.name] = plugin
+          acc.dependencies.push(plugin.meta.dependencies)
+          return acc
+        },
+        { plugins: {}, dependencies: [] }
+      )
+    })
+    .catch((_err) => {
+      throw Error(utils.message("Something went incredibly wrong during plugin loading...").as_error)
+    })
 
   app.config.dependencies = app.config.dependencies.concat(dependencies.flat())
   app.plugins = plugins
@@ -60,9 +71,8 @@ async function load_plugins (app) {
  * - Currently, we provide the logger, the plugins config, an event-prefix and the acdl helper functions
  *
  */
-function init_plugins (plugins, env, event_prefix) {
+function init_plugins(plugins, env, event_prefix) {
   Object.keys(plugins).map((plugin_key) => {
-
     // 1. Check if the plugin correctly provides the impl() function
     if (!utils.is_function(plugins[plugin_key].impl)) {
       throw Error(utils.message(`Plugin "${plugin_key}" does not implement function impl()`).as_error)
@@ -74,9 +84,8 @@ function init_plugins (plugins, env, event_prefix) {
       config: plugins[plugin_key].config,
       event_prefix: `${event_prefix}:${plugin_key}`,
       acdl: utils.acdl,
-      shared: {}
+      shared: {},
     })
-
 
     // 3. Invoke the impl() function of the plugin with the context
     plugins[plugin_key].impl = plugins[plugin_key].impl(context)
@@ -105,7 +114,7 @@ function init_plugins (plugins, env, event_prefix) {
  * that processes the event (delegate to plugin)
  *
  */
-function register_plugin_event_handler (app) {
+function register_plugin_event_handler(app) {
   const event_handler = Object.keys(app.plugins).reduce((acc, plugin_key) => {
     const events = app.plugins[plugin_key]?.meta?.events
     const handler = app.plugins[plugin_key]?.impl?.handle_event
@@ -116,10 +125,10 @@ function register_plugin_event_handler (app) {
         utils.acdl.add_event_listener(event, handler)
       })
     }
-    acc[plugin_key] = { events, handler: valid_handler ? 'found' : 'missing' }
+    acc[plugin_key] = { events, handler: valid_handler ? "found" : "missing" }
     return acc
   }, {})
-  app.logger.info('Registered plugin event-handlers:', { event_handler })
+  app.logger.info("Registered plugin event-handlers:", { event_handler })
 }
 
 /**
@@ -130,7 +139,7 @@ function register_plugin_event_handler (app) {
  * Namespaces are identical with the plugin names => TODO: prevent possible conflicts
  *
  */
-function get_all_plugin_provider (app) {
+function get_all_plugin_provider(app) {
   const plugin_list = Object.keys(app.plugins)
   return plugin_list.reduce((acc, key) => {
     if (utils.is_object(app.plugins[key]?.impl?.provider)) {
@@ -139,4 +148,3 @@ function get_all_plugin_provider (app) {
     return acc
   }, {})
 }
-

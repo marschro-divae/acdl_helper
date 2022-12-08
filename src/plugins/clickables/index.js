@@ -1,5 +1,5 @@
-import setup_clickables from './lib/setup_clickables'
-import utils from './lib/utils'
+import setup_clickables from "./lib/setup_clickables"
+import utils from "./lib/utils"
 /**
  * GENERAL PLUGIN ARCHITECTURE
  *
@@ -13,36 +13,36 @@ import utils from './lib/utils'
 
 export default function () {
   const meta = {
-    name: 'clickables',
+    name: "clickables",
     dependencies: [],
     events: [],
     config: {
       clickables: [
-        { selector: '[data-cmp-clickable-link]', event_name: 'cmp:link_click', delay: 200 },
-        { selector: '[data-cmp-clickable-cta]', event_name: 'cmp:cta_click', delay: 200 }
-      ]
+        { selector: "[data-cmp-clickable-link]", event_name: "cmp:link_click", delay: 200 },
+        { selector: "[data-cmp-clickable-cta]", event_name: "cmp:cta_click", delay: 200 },
+      ],
     },
   }
 
   return {
     meta: Object.freeze(meta),
 
-    impl (context) {
+    impl(context) {
       return {
-        init: init(context)
+        init: init(context),
       }
-    }
+    },
   }
 
   /**
    * IMPLEMENTATION FUNCTIONS
    */
 
-  function init (context) {
+  function init(context) {
     const test = {
-      selector: 'string',
-      event_name: 'string',
-      delay: 'number'
+      selector: "string",
+      event_name: "string",
+      delay: "number",
     }
 
     const test_result = context.config.clickables.map(utils.has_typed_properties(test))
@@ -56,7 +56,7 @@ export default function () {
 
     return function () {
       context.config.clickables.forEach(clickable)
-      context.logger.success('Clickable elements initialized')
+      context.logger.success("Clickable elements initialized")
     }
   }
 }

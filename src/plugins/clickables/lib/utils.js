@@ -1,9 +1,9 @@
 export default Object.freeze({
   has_typed_properties,
-  all_good
+  all_good,
 })
 
-function has_typed_properties (test) {
+function has_typed_properties(test) {
   return function (obj_to_be_tested) {
     const missings = Object.keys(test).reduce((acc, prop_name) => {
       if (!has_prop(obj_to_be_tested, prop_name)) {
@@ -19,27 +19,27 @@ function has_typed_properties (test) {
   }
 }
 
-function is_string (maybe_string) {
-  return typeof maybe_string === 'string'
+function is_string(maybe_string) {
+  return typeof maybe_string === "string"
 }
 
-function is_number (maybe_number) {
+function is_number(maybe_number) {
   return Number.isFinite(maybe_number)
 }
 
-function has_prop (obj, prop_name) {
+function has_prop(obj, prop_name) {
   return Object.prototype.hasOwnProperty.call(obj, prop_name)
 }
 
-function is_type (type, value) {
+function is_type(type, value) {
   const match = {
-    'string': is_string,
-    'number': is_number
+    string: is_string,
+    number: is_number,
   }
   return match[type](value)
 }
 
-function all_good (maybe_array) {
+function all_good(maybe_array) {
   if (!Array.isArray(maybe_array)) {
     return false
   }

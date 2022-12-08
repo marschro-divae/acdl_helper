@@ -1,28 +1,16 @@
 {
-    "env": {
-        "browser": true,
-        "es2021": true
-    },
-    "extends": "eslint:recommended",
-    "overrides": [],
-    "parserOptions": {
-        "ecmaVersion": "latest",
-        "sourceType": "module"
-    },
-    "ignorePatterns": ["dist/**/*", "server/**/*"],
-    "rules": {
-        "indent": ["error",2],
-        "linebreak-style": ["error","unix"],
-        "quotes": ["error","single"],
-        "semi": ["error","never"],
-        "no-unused-vars": ["error",{ "argsIgnorePattern": "^_" }],
-        "no-trailing-spaces": ["error", { "skipBlankLines": false }],
-        "object-curly-spacing": ["error", "always"],
-        "eol-last": ["error", "always"],
-        "space-before-function-paren": ["error", {
-            "anonymous": "always",
-            "named": "always",
-            "asyncArrow": "always"
-        }]
-    }
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": ["eslint:recommended", "prettier"],
+  "overrides": [],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "ignorePatterns": ["dist/**/*", "server/**/*"],
+  "rules": {
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+  }
 }

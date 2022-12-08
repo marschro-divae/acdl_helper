@@ -1,6 +1,7 @@
 # Plugin - page
 
 ## Description
+
 According to the Adobe core-components documentation, any component that somehow shows up, can push the event `cmp:show` to the adobeDataLayer (slider-items, etc).
 This is also true for the page component itself.
 
@@ -13,6 +14,7 @@ This plugin helps you to do the 'heavy-lifting'. It listens for the `cmp:show` e
 - `events`: ['cmp:show']
 
 ## Installation & Config
+
 ```javascript
 // Example
 plugins: [
@@ -32,16 +34,19 @@ plugins: [
 // => result
 // provides functionalities for accessing page properties - see Providers, below
 ```
+
 **Config**
-- `component_types`: 
-	- Array of tests, that define the component-type
-	- One could also simply use wildcards such as `'*components/page*'` - then all other cases are matched and you do not have to list all types, that identify a page.
 
-- `page_load_event`: 
-	- the configurable part of the event-name that is pushed to the adobeDataLayer
+- `component_types`:
 
+  - Array of tests, that define the component-type
+  - One could also simply use wildcards such as `'*components/page*'` - then all other cases are matched and you do not have to list all types, that identify a page.
+
+- `page_load_event`:
+  - the configurable part of the event-name that is pushed to the adobeDataLayer
 
 ## Providers
+
 ```javascript
 acdl_helper.page.get() // returns the page properties
 ```

@@ -1,4 +1,4 @@
-import utils from './lib/utils'
+import utils from "./lib/utils"
 
 /**
  * GENERAL PLUGIN ARCHITECTURE
@@ -11,55 +11,55 @@ import utils from './lib/utils'
  * - Config can be overwritten via remote-configuration => always address config from context
  */
 
-export default function usercentrics () {
+export default function usercentrics() {
   const meta = {
-    name: 'usercentrics',
-    dependencies: ['consent_status', 'launch:loaded'],
-    events: ['consent_status'],
+    name: "usercentrics",
+    dependencies: ["consent_status", "launch:loaded"],
+    events: ["consent_status"],
     config: {
       protocol: {
-        'Adobe Analytics': 'ANALYTICS',
-        'Adobe Target': 'TARGET'
+        "Adobe Analytics": "ANALYTICS",
+        "Adobe Target": "TARGET",
       },
-      push_after: ''
+      push_after: "",
     },
   }
 
   return {
     meta: Object.freeze(meta),
 
-    impl (context) {
+    impl(context) {
       return {
         init: init(context),
         handle_event: handle_event(context),
-        provider: provider(context)
+        provider: provider(context),
       }
-    }
+    },
   }
 
   /**
    * IMPLEMENTATION FUNCTIONS
    */
 
-  function init (context) {
+  function init(context) {
     return function () {
       const ui_language_handler = (_event) => {
         window.UC_UI.updateLanguage(document.documentElement.lang)
-        window.removeEventListener('UC_UI_INITIALIZED', ui_language_handler)
+        window.removeEventListener("UC_UI_INITIALIZED", ui_language_handler)
       }
 
       if (window.UC_UI && window.UC_UI.isInitialized()) {
         window.UC_UI.updateLanguage(document.documentElement.lang)
       } else {
-        window.addEventListener('UC_UI_INITIALIZED', ui_language_handler)
+        window.addEventListener("UC_UI_INITIALIZED", ui_language_handler)
       }
       if (!window.adobe?.optIn) {
-        context.logger.error('Adobe OptIn Framwork not available - Please install via ECID Launch Extension')
+        context.logger.error("Adobe OptIn Framwork not available - Please install via ECID Launch Extension")
       } else {
-        window.adobe.optIn.on('complete', (consent) => {
-          context.logger.success('Consent updated: ', { consent })
+        window.adobe.optIn.on("complete", (consent) => {
+          context.logger.success("Consent updated: ", { consent })
           context.acdl.push({ event: `${context.event_prefix}:consent_applied` })
-          context.acdl.push(utils.update_object(['user', 'consent', 'adobe'], consent))
+          context.acdl.push(utils.update_object(["user", "consent", "adobe"], consent))
           if (context.config.push_after) {
             context.acdl.push({ event: context.config.push_after })
           }
@@ -68,14 +68,14 @@ export default function usercentrics () {
     }
   }
 
-  function handle_event (context) {
+  function handle_event(context) {
     return function (event) {
       if (!context?.config?.protocol) {
-        context.logger.warning('No custom protocol configured - using fallback protocol!')
+        context.logger.warning("No custom protocol configured - using fallback protocol!")
       }
 
       if (!window.adobe?.optIn) {
-        context.logger.error('Cannot handle event - adobe optIn framework is missing!')
+        context.logger.error("Cannot handle event - adobe optIn framework is missing!")
         return
       }
 
@@ -94,31 +94,30 @@ export default function usercentrics () {
       }, false)
 
       ecid_needed
-        ? window.adobe.optIn.approve(window.adobe.OptInCategories['ECID'], true)
-        : window.adobe.optIn.deny(window.adobe.OptInCategories['ECID'], true)
+        ? window.adobe.optIn.approve(window.adobe.OptInCategories["ECID"], true)
+        : window.adobe.optIn.deny(window.adobe.OptInCategories["ECID"], true)
       window.adobe.optIn.complete()
     }
   }
 
-  function provider (context) {
+  function provider(context) {
     return Object.freeze({
-      get_active_language () {
+      get_active_language() {
         return window.UC_UI.getActiveLanguage()
       },
 
-      get_base_info () {
+      get_base_info() {
         return window.UC_UI.getServicesBaseInfo()
       },
 
-      async get_full_info () {
+      async get_full_info() {
         try {
           const full_info = await window.UC_UI.getServicesFullInfo()
           return full_info
         } catch (err) {
-          context.logger.error('Get full info from usercentrics failed:', err)
+          context.logger.error("Get full info from usercentrics failed:", err)
         }
-      }
+      },
     })
   }
 }
-
