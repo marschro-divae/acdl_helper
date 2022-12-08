@@ -13,10 +13,7 @@ import plug from "./lib/plugin_utils"
     let app = {
       logger: utils.logger(custom_config.env || "development")(STATICS.LOG_PREFIX),
       EVENTS,
-      config: {
-        ...default_config,
-        ...custom_config,
-      },
+      config: utils.merge_configs(default_config, custom_config),
     }
 
     app.logger.info("Starting initialization...")
@@ -30,9 +27,7 @@ import plug from "./lib/plugin_utils"
     }
 
     const resolve_dependencies = utils.resolve_initial_dependencies(app, (details) => {
-      app.logger.success(`Resolved ${details.length} dependencies:`, {
-        deps: details,
-      })
+      app.logger.success(`Resolved ${details.length} dependencies:`)
       utils.acdl.remove_event_listener(app.EVENTS.ACDL_ALL_EVENTS, resolve_dependencies)
       utils.acdl.push({
         event: app.EVENTS.ACDL_HELPER_DEPENDENCIES_RESOLVED,

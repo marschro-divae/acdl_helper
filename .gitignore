@@ -1,4 +1,12 @@
+# General
 node_modules
 dist
 test
+node
+target
+
+# OS files
 **/.DS_Store
+
+# IDE stuff
+.vscode
