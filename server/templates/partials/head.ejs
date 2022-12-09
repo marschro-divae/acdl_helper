@@ -1,0 +1,29 @@
+<head>
+  <meta charset="UTF-8" />
+  <title>ACDL_HELPER - Development Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/images/favicon.png" />
+  <!-- Usercentrics -->
+  <link rel="preconnect" href="//app.usercentrics.eu" />
+  <link rel="preconnect" href="//api.usercentrics.eu" />
+  <link rel="preconnect" href="//privacy-proxy.usercentrics.eu" />
+  <link rel="preload" href="//app.usercentrics.eu/browser-ui/latest/loader.js" as="script" />
+  <link rel="preload" href="//privacy-proxy.usercentrics.eu/latest/uc-block.bundle.js" as="script" />
+  <script
+    id="usercentrics-cmp"
+    data-settings-id="46yBbZUG"
+    src="https://app.usercentrics.eu/browser-ui/latest/loader.js"
+    data-block-data-layer-push="1"
+    async
+  ></script>
+  <script type="application/javascript" src="https://privacy-proxy.usercentrics.eu/latest/uc-block.bundle.js"></script>
+  <!-- 
+		Usercentrics smart data protector blocks everything injected, including Adobe Launch. 
+		Deactivation needed for "Adobe Experience Cloud (f6nkjdUL)" 
+	-->
+  <script>
+    uc.deactivateBlocking(["f6nkjdUL"])
+  </script>
+  <link rel="stylesheet" href="css/style.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="css/mobile.css" />
+</head>
