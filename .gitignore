@@ -4,6 +4,7 @@ dist
 test
 node
 target
+clientlibs-root
 
 # OS files
 **/.DS_Store

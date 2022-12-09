@@ -39,13 +39,15 @@ As the ACDL itself does not handle dependencies an integrations for us, every pr
    ```
 
 3. Last step: Start the dev server and the dev build by
-   `   npm run dev`
+   ```
+   npm run serve:dev
+   ```
    DONE ! - go visit [localhost:3000](http://localhost:3000)
 
 - Following command also starts the server, but with clientlibs, build for prod
 
   ```
-  npm run prod
+  npm run serve:prod
   ```
 
 - Just want to build prod clientlibs?

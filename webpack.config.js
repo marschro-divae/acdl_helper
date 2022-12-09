@@ -12,10 +12,6 @@ export default {
           fullySpecified: false,
         },
       },
-      {
-        test: /\.md$/,
-        loader: "ignore-loader",
-      },
     ],
   },
 }

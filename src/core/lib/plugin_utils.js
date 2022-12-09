@@ -29,7 +29,7 @@ async function load_plugins(app) {
   const { plugins, dependencies } = await Promise.all(
     plugin_list.map(async (plugin_name) => {
       try {
-        const plugin_module = await import(`../../plugins/${plugin_name}`)
+        const plugin_module = await import(`../../plugins/${plugin_name}/index.js`)
         const plugin = plugin_module.default()
         const maybe_custom_config_for_plugin =
           utils.is_object(app.config.plugins[plugin_name]) && app.config.plugins[plugin_name]

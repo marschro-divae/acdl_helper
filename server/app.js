@@ -22,5 +22,5 @@ app.get("/about/product", (req, res) => res.render("product"))
 app.get("/blog/post", (req, res) => res.render("post"))
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+  console.log(`Development dummy-page listening on http://localhost:${port}`)
 })
