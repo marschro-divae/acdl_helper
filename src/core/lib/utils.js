@@ -114,6 +114,9 @@ function update_object(pathArr, data) {
 }
 
 function merge_configs(base, customize) {
+  if (!customize) {
+    return base
+  }
   const all_plugins = { ...base.plugins, ...customize.plugins }
   return { ...base, ...customize, plugins: all_plugins }
 }
