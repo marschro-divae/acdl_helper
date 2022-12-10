@@ -36,7 +36,7 @@ function get_component_state(app) {
     }
     if (!is_dl_event(event)) {
       is_native_event(event)
-        ? app.logger.warning("Catched native event", event)
+        ? app.logger.warning(`Catched native event: ${event?.$type}`)
         : app.logger.warning("Nothing to catch")
       return
     }
