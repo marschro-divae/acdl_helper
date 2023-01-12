@@ -50,9 +50,15 @@ As the ACDL itself does not handle dependencies an integrations for us, every pr
   npm run serve:prod
   ```
 
-- Just want to build prod clientlibs?
+- Build prod files?
+
   ```
   npm run build:prod
+  ```
+
+- Build aem-clientlibs?
+  ```
+  npm run build:clientlibs
   ```
 
 ### 4. Test
@@ -69,17 +75,17 @@ The `acdl_helper` library is available at the global `window` object.
 The library has to be instantiated and configured before its first usage.
 
 ```javascript
-// Example config object
+// Example config object iwth optional config for 'page-plugin'
 const config = {
-  env: 'development',
-  event_prefix: 'acdl_helper',
-  dependencies: ['launch:loaded'],
-  plugins: [
+  env: "development",
+  event_prefix: "acdl_helper",
+  dependencies: ["launch:loaded"],
+  plugins: {
     page: {
-      component_types: [{ '@type': '*/components/page*' }],
-      page_load_event: 'load'
-	  }
-  ]
+      component_types: [{ "@type": "*/components/page*" }],
+      page_load_event: "load",
+    },
+  },
 }
 acdl_helper(config)
 ```
@@ -88,12 +94,12 @@ acdl_helper(config)
 
 - `env`
 
-  - default: **development**
+  - default: **"development"**
   - description: if set to development, you get a bunch of log messages
 
 - `event_prefix`
 
-  - default: **acdl_helper**
+  - default: **"acdl_helper"**
   - description: defines the prefix for events, pushed by the lib to the dataLayer
 
 - `dependencies`
@@ -103,15 +109,15 @@ acdl_helper(config)
   - remark: Setting this, completely overrides the default (no merge)
 
 - `plugins`:
-  - default: **[]**
-  - description: Array of plugins to be used
+  - default: **{}**
+  - description: Object of plugins to be used
   - remark: Plugins are configured as objects with plugin-identifier as key and config oject as value
 
 Right after initialization, `window.acdl_helper` provides its core functionality and plugins (if installed and configured)
 
 ### Core API
 
-The core of the `acdl_helper` basically provides one simple function `catch()` which _catches_ the current adobeDataLayer push-event, mostly received in the Adobe Launch event-lifecycle by the [Adobe Client Data Layer Extension](https://exchange.adobe.com/apps/ec/104231).
+The core of the `acdl_helper` basically provides one simple function `catch()` which _catches_ the current adobeDataLayer push-event. This event is mostly processed in the Adobe Launch event-lifecycle by the [Adobe Client Data Layer Extension](https://exchange.adobe.com/apps/ec/104231).
 
 After catching the event, the returned `get()` function provides the state of the component, that emitted the event - this could be any component (also the page, which is just a special component)
 
@@ -125,7 +131,7 @@ Where and when to use? - i.e. the `adcl_helper` can be used in custom code block
 
 This leverages the complexity to figure out the _pathInfo_ from the event and get the state of the emitting component by its _pathInfo_ value (which creates a lot of redundant boilerplate custom code in Launch). We now can do this in just one simple function call. This is as convenient as getting the `event.detail` which we are used to when dealing with CustomEvents.
 
-**⚠️ BEWARE** - All this only makes sense, if you catch _dataLayer-events_. Other events like native click events have nothing to do with _dataLayer-events_ and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native events.
+**⚠️ BEWARE** - All this only makes sense, if you catch _dataLayer-events_. Other events like native click events have nothing to do with _dataLayer-events_ and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native or custom events.
 
 ## 05 - PLUGINS
 

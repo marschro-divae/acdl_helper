@@ -83,7 +83,7 @@ export default function page() {
           eventInfo: { path: context.shared.page_component },
         })
       } else {
-        context.logger.error("Cannot resolve page. Pagetype is unmatched. Please check or update our configuration!")
+        context.logger.error("Cannot resolve page. Pagetype is unmatched. Please check or update your configuration!")
       }
     }
   }

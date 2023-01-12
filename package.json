@@ -15,7 +15,7 @@
     "watch:build:prod": "webpack --mode=production --watch",
     "watch:server": "nodemon server/app.js --watch 'server/**/*' -e js,ejs",
     "build:prod": "webpack --mode=production",
-    "build:clientlibs": "clientlib --verbose"
+    "build:clientlibs": "webpack --mode=production && clientlib ./clientlib.config.cjs --verbose"
   },
   "author": "",
   "license": "MIT",

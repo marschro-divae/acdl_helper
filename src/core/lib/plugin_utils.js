@@ -69,6 +69,7 @@ async function load_plugins(app) {
  *
  * - If the plugins need more context, this is a good place to handle it
  * - Currently, we provide the logger, the plugins config, an event-prefix and the acdl helper functions
+ * - and a shared object space, to be useed by plugins and t make it avaiable to the greater context
  *
  */
 function init_plugins(plugins, env, event_prefix) {

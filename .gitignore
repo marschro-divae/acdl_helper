@@ -9,5 +9,8 @@ clientlibs-root
 # OS files
 **/.DS_Store
 
+# dot-env files
+.env
+
 # IDE stuff
 .vscode

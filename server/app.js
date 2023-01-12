@@ -11,7 +11,10 @@ const port = 3000
 
 const app = express()
 
-const render = custom_renderer({ adobe_launch: process.env["ADOBE_LAUNCH_PROPERTY"] })
+const render = custom_renderer({
+  adobe_launch: process.env["ADOBE_LAUNCH_PROPERTY"],
+  usercentrics_settings_id: process.env["USERCENTRICS_SETTINGS_ID"],
+})
 
 app.set("view engine", "ejs")
 app.set("views", path.join(__dirname, "templates"))

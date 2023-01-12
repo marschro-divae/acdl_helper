@@ -51,29 +51,36 @@ function get_component_state(app) {
   }
 }
 
-// TODO: refactor this by extracting the function in the ternary - but implement tests first!
 function get_component_data(e, resolver) {
   if (!e) return undefined
   if (
     Object.prototype.hasOwnProperty.call(e, "eventInfo") &&
     Object.prototype.hasOwnProperty.call(e.eventInfo, "path")
   ) {
-    const dataLayerObject = resolver(e.eventInfo.path)
-    return dataLayerObject !== undefined
-      ? function (test, property) {
-          const fsProperty = is_string(test) && !property ? test : property
-          const fsTest = is_object(test) ? test : undefined
-          return test_dataLayer_object(dataLayerObject, fsTest, { one_of: true })
-            ? fsProperty
-              ? enrich_with_own_properties(dataLayerObject, e.eventInfo.path)[fsProperty]
-              : enrich_with_own_properties(dataLayerObject, e.eventInfo.path)
-            : undefined
-        }
-      : function (_filter, _property) {
-          return undefined
-        }
+    const data_layer_object = resolver(e.eventInfo.path)
+    return data_layer_object !== undefined
+      ? test_property(e, data_layer_object)
+      : do_not_test_property(e, data_layer_object)
   }
   return function (_filter, _property) {
+    return undefined
+  }
+}
+
+function test_property(e, data_layer_object) {
+  return function (test, property) {
+    const fsProperty = is_string(test) && !property ? test : property
+    const fsTest = is_object(test) ? test : undefined
+    return test_dataLayer_object(data_layer_object, fsTest, { one_of: true })
+      ? fsProperty
+        ? enrich_with_own_properties(data_layer_object, e.eventInfo.path)[fsProperty]
+        : enrich_with_own_properties(data_layer_object, e.eventInfo.path)
+      : undefined
+  }
+}
+
+function do_not_test_property(_e, _data_layer_object) {
+  return function (_test, _property) {
     return undefined
   }
 }
