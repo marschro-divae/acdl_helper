@@ -69,9 +69,25 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
   npm run build:crxbundle
   ```
 
-### 4. Test
+### 4. Clientlib integration
 
-TODO !
+- **AEM htl**
+
+  Use AEM clientlib integration with categories `[acdl_helper]` and type `module`
+
+  ```html
+  <sly data-sly-call="${clientlib.js @ categories=['acdl_helper'], type='module'}"></sly>
+  ```
+
+- **Any other regular html website**
+
+  ```html
+  <script type="application/javascript" src="/path/to/acdl_helper.js" async defer></script>
+  ```
+
+### 5. Test
+
+Coming soon... ;-)
 
 ## 04 - Usage and Core API
 

@@ -14,7 +14,7 @@
     "serve:prod": "npm-run-all --parallel _watch:server _watch:build:prod ",
     "build:prod": "webpack --mode=production",
     "build:clientlibs": "webpack --mode=production && clientlib ./clientlib.config.cjs --verbose",
-    "build:crxbundle": "webpack --mode=production && clientlib ./clientlib.config.cjs --verbose && mvn clean install -X",
+    "build:crxbundle": "npm version patch && webpack --mode=production && clientlib ./clientlib.config.cjs --verbose && mvn clean install -X",
     "_watch:build:dev": "webpack --mode=development --watch",
     "_watch:build:prod": "webpack --mode=production --watch",
     "_watch:server": "nodemon server/app.js --watch 'server/**/*' -e js,ejs"
