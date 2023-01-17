@@ -1,13 +1,13 @@
 module.exports = {
   // context: '__dirnam',
 
-  clientLibRoot: "clientlibs-root",
+  clientLibRoot: "jcr_root/apps/divae",
 
   libs: [
     {
       name: "acdl_helper",
-      serializationFormat: "json",
-      longCacheKey: "${project.version}-${buildNumber}",
+      serializationFormat: "xml",
+      longCacheKey: "${project.version}-${buildNumber}-${buildstamp}",
       allowProxy: true,
       cssProcessor: ["default:none", "min:none"],
       jsProcessor: ["default:none", "min:none"],

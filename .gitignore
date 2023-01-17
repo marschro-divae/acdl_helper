@@ -4,7 +4,7 @@ dist
 test
 node
 target
-clientlibs-root
+jcr_root/apps/divae/acdl_helper
 
 # OS files
 **/.DS_Store

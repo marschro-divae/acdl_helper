@@ -5,11 +5,11 @@
 ---
 
 The [Adobe Client Data Layer (ADCL)](https://github.com/adobe/adobe-client-data-layer) is part of the wcm core components by Adobe.
-The ACDL is an event-driven call-stack storage. Everything that happens on a website, like the page-load itself, user-behaviour like clicks or results from more complex components (configurators etc.) should be pushed as events to the ACDL array.
+The ACDL is basically an event-queue. Everything, happening on a website, like the page-load itself, user-behaviour like clicks or results from more complex components (like configurators etc.) should be pushed as events to the ACDL.
 
-The main advantage of this approach is, that there is a state of events and probably more relavant, we can handle the often frustrating asynchrony of dependencies and things that could happen on modern websistes.
+The main advantage of this approach is, that we have a state of events and a chronological order of events with which, we can handle the often frustrating randomnes and asynchronicity of dependencies.
 
-As the ACDL itself does not handle dependencies an integrations for us, every project has to implement additional glue-code that binds things together. In order to make this a bit more convenient this library tries to provide some of the most used convenience features and functionalities.
+As the ACDL itself does not handle dependencies and integrations for us, every project has to implement additional glue-code that binds things together. In order to make this a bit more convenient, this library tries to provide some of the most used features and functionalities.
 
 ## 02 - ARCHITECTURE
 
@@ -26,9 +26,9 @@ As the ACDL itself does not handle dependencies an integrations for us, every pr
 
 ### 1. Prerequisites
 
-- node 16
+- node > v16
 
-### 2. Build
+### 2. Run development environment
 
 1. Clone this repo
 
@@ -40,25 +40,33 @@ As the ACDL itself does not handle dependencies an integrations for us, every pr
 
 3. Last step: Start the dev server and the dev build by
    ```
-   npm run serve:dev
+   npm start
    ```
    DONE ! - go visit [localhost:3000](http://localhost:3000)
 
-- Following command also starts the server, but with clientlibs, build for prod
+- Following command also starts the server, but with js files, build for prod
 
   ```
   npm run serve:prod
   ```
 
-- Build prod files?
+### 3. Build Artefacts
+
+- Simply build production-ready js-files => `dist` folder
 
   ```
   npm run build:prod
   ```
 
-- Build aem-clientlibs?
+- Build clientlibs, ready to add to an AEM projects clientlib folder => `clientlib` folder
+
   ```
   npm run build:clientlibs
+  ```
+
+- Build CRX content package to be installed via crx-package manager => `target` folder
+  ```
+  npm run build:crxbundle
   ```
 
 ### 4. Test
@@ -68,6 +76,10 @@ TODO !
 ## 04 - Usage and Core API
 
 ---
+
+### Integration
+
+1. Projects without
 
 ### Initialization
 
