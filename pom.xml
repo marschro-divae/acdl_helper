@@ -11,7 +11,7 @@
 
   <groupId>com.divae</groupId>
   <artifactId>com.divae.acdl_helpe</artifactId>
-  <version>0.9.1-SNAPSHOT</version>
+  <version>${revision}</version>
   <packaging>content-package</packaging>
 
   <name>diva-e acdl_helper library</name>
