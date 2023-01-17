@@ -58,7 +58,7 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
   npm run build:prod
   ```
 
-- Build clientlibs, ready to add to an AEM projects clientlib folder => `clientlib` folder
+- Build clientlibs, ready to add to an AEM projects clientlib folder => `jcr_root` folder
 
   ```
   npm run build:clientlibs

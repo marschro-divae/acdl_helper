@@ -10,7 +10,7 @@
   </parent>
 
   <groupId>com.divae</groupId>
-  <artifactId>com.divae.acdl_helpe</artifactId>
+  <artifactId>com.divae.acdl_helper</artifactId>
   <version>${revision}</version>
   <packaging>content-package</packaging>
 
