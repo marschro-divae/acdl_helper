@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
+  <!-- <parent>
     <groupId>io.wcm.maven</groupId>
     <artifactId>io.wcm.maven.aem-global-parent</artifactId>
     <version>2.0.16</version>
     <relativePath/>
-  </parent>
+  </parent> -->
 
   <groupId>com.divae</groupId>
   <artifactId>com.divae.acdl_helper</artifactId>
@@ -16,6 +16,12 @@
 
   <name>diva-e acdl_helper library</name>
   <description>Clientlib helper library for the adobe client data-layer</description>
+
+  <scm>
+    <connection>scm:git:https://gitlab.diva-e.com/adobe-experience-cloud/tools/acdl-helper</connection>
+    <developerConnection>anything</developerConnection>
+    <url>https://gitlab.diva-e.com/adobe-experience-cloud/tools/acdl-helper</url>
+  </scm>
 
   <properties>
     <contentPackage.name>acdl_helper</contentPackage.name>
@@ -52,6 +58,7 @@
         <configuration>
           <doCheck>true</doCheck>
           <doUpdate>true</doUpdate>
+          <useLastCommittedRevision>true</useLastCommittedRevision>
           <shortRevisionLength>8</shortRevisionLength>
           <timestampFormat>yyMMdd-HHmmss</timestampFormat>
           <timestampPropertyName>buildstamp</timestampPropertyName>
@@ -62,6 +69,11 @@
         <groupId>org.apache.jackrabbit</groupId>
         <artifactId>filevault-package-maven-plugin</artifactId>
         <extensions>true</extensions>
+        <executions>
+          <execution>
+            <phase>package</phase>
+          </execution>
+        </executions>
         <configuration>
           <name>${contentPackage.name}</name>
           <group>${contentPackage.group}</group>
@@ -69,7 +81,7 @@
         </configuration>
       </plugin>
 
-      <plugin>
+      <!-- <plugin>
         <groupId>io.wcm.maven.plugins</groupId>
         <artifactId>wcmio-content-package-maven-plugin</artifactId>
         <configuration>
@@ -77,6 +89,32 @@
             <exclude>.*/usages</exclude>
           </excludeNodes>
         </configuration>
+      </plugin> -->
+
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>install</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/crx-package</outputDirectory>
+              <resources>          
+                <resource>
+                  <directory>target</directory>
+                  <includes>
+                    <include>*.zip</include>
+                  </includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>              
+            </configuration>            
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Do not generate eclipse project files -->
