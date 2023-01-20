@@ -8,12 +8,17 @@
   <packaging>content-package</packaging>
 
   <name>diva-e acdl_helper library</name>
-  <description>Clientlib helper library for the adobe client data-layer</description>
+  <description>Clientlib helper library for the Adobe Client Data Layer (ACDL)</description>
+
+  <!-- <parent>
+    <groupId>io.wcm.maven</groupId>
+    <artifactId>io.wcm.maven.aem-global-parent</artifactId>
+    <version>2.0.16</version>
+    <relativePath/>
+  </parent> -->
 
   <scm>
     <connection>scm:git:https://gitlab.diva-e.com/adobe-experience-cloud/tools/acdl-helper</connection>
-    <developerConnection>anything</developerConnection>
-    <url>https://gitlab.diva-e.com/adobe-experience-cloud/tools/acdl-helper</url>
   </scm>
 
   <properties>
@@ -34,6 +39,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-clean-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>clean</phase>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -42,16 +52,13 @@
         <version>3.0.0</version>
         <executions>
           <execution>
-            <phase>validate</phase>
+            <phase>initialize</phase>
             <goals>
               <goal>create</goal>
             </goals>
           </execution>
         </executions>
         <configuration>
-          <doCheck>true</doCheck>
-          <doUpdate>true</doUpdate>
-          <useLastCommittedRevision>true</useLastCommittedRevision>
           <shortRevisionLength>8</shortRevisionLength>
           <timestampFormat>yyMMdd-HHmmss</timestampFormat>
           <timestampPropertyName>buildstamp</timestampPropertyName>
@@ -74,7 +81,7 @@
         </configuration>
       </plugin>
 
-      <!-- <plugin>
+      <plugin>
         <groupId>io.wcm.maven.plugins</groupId>
         <artifactId>wcmio-content-package-maven-plugin</artifactId>
         <configuration>
@@ -82,7 +89,7 @@
             <exclude>.*/usages</exclude>
           </excludeNodes>
         </configuration>
-      </plugin> -->
+      </plugin>
 
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
@@ -102,30 +109,11 @@
                   <includes>
                     <include>*.zip</include>
                   </includes>
-                  <filtering>true</filtering>
                 </resource>
               </resources>              
             </configuration>            
           </execution>
         </executions>
-      </plugin>
-
-      <!-- Do not generate eclipse project files -->
-      <plugin>
-        <groupId>io.wcm.devops.maven.plugins</groupId>
-        <artifactId>eclipse-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-
-      <!-- Do not deploy sources to repository -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <configuration>
-          <attach>false</attach>
-        </configuration>
       </plugin>
 
     </plugins>

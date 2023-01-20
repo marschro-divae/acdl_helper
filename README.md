@@ -27,6 +27,9 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
 ### 1. Prerequisites
 
 - node > v16
+- npm
+- git
+- maven (optional, if crx-bundle should be build)
 
 ### 2. Run development environment
 
