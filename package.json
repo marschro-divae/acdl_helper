@@ -1,6 +1,6 @@
 {
   "name": "acdl_helper",
-  "version": "0.9.2",
+  "version": "1.0.0",
   "description": "Helper Library for the Adobe Client Data Layer",
   "private": true,
   "type": "module",
