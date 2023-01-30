@@ -20,6 +20,12 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
 - Every additional or project specific implementation has to be implemented via plugins.
 - The library is **not** persistent over several server-roundtrips and as such does not solve problems in single-page applications.
 
+## 03 - CRX-Package Releases
+
+---
+
+Latest version to be found here: [crx-package releases](/crx-package/)
+
 ## 03 - DEVELOPMENT SETUP
 
 ---
@@ -29,7 +35,7 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
 - node > v16
 - npm
 - git
-- maven (optional, if crx-bundle should be build)
+- maven (optional, if crx-package should be build)
 
 ### 2. Run development environment
 
@@ -67,7 +73,7 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
   npm run build:clientlibs
   ```
 
-- Build CRX content package to be installed via crx-package manager => `target` folder
+- Build CRX content package to be installed via crx-package manager => [`crx-package` releases folder](/crx-package/)
   ```
   npm run build:crxbundle
   ```
@@ -76,7 +82,7 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
 
 - **AEM htl**
 
-  Use AEM clientlib integration with categories `[acdl_helper]` and type `module`
+  Whether you integrated the clientlib via the frontend-build process or installed the latest [crx-packag](/crx-package/), use the AEM clientlib integration with categories `[acdl_helper]` and type `module`
 
   ```html
   <sly data-sly-call="${clientlib.js @ categories=['acdl_helper'], type='module'}"></sly>
@@ -98,7 +104,8 @@ Coming soon... ;-)
 
 ### Integration
 
-1. Projects without
+1. The easiest way is to install the acdl_helper [latest release](/crx-package/) via crx-package manager
+2. Projects without crx access, may want to unclude the package delivery via the build-process
 
 ### Initialization
 

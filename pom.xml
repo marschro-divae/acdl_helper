@@ -10,13 +10,6 @@
   <name>diva-e acdl_helper library</name>
   <description>Clientlib helper library for the Adobe Client Data Layer (ACDL)</description>
 
-  <!-- <parent>
-    <groupId>io.wcm.maven</groupId>
-    <artifactId>io.wcm.maven.aem-global-parent</artifactId>
-    <version>2.0.16</version>
-    <relativePath/>
-  </parent> -->
-
   <scm>
     <connection>scm:git:https://gitlab.diva-e.com/adobe-experience-cloud/tools/acdl-helper</connection>
   </scm>
@@ -26,14 +19,6 @@
   </properties>
 
   <build>
-    <finalName>${contentPackage.name}-${project.version}</finalName>
-    <resources>
-      <resource>
-        <directory>jcr_root</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
-
     <plugins>
 
       <plugin>
@@ -75,19 +60,10 @@
           </execution>
         </executions>
         <configuration>
+          <enableJcrRootFiltering>true</enableJcrRootFiltering>
           <name>${contentPackage.name}</name>
           <group>${contentPackage.group}</group>
           <packageType>application</packageType>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>io.wcm.maven.plugins</groupId>
-        <artifactId>wcmio-content-package-maven-plugin</artifactId>
-        <configuration>
-          <excludeNodes>
-            <exclude>.*/usages</exclude>
-          </excludeNodes>
         </configuration>
       </plugin>
 
