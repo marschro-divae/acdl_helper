@@ -111,7 +111,8 @@ Coming soon... ;-)
 
 The `acdl_helper` library is available at the global `window` object.
 The library has to be instantiated and configured before its first usage.
-The configuration (initialization) is done in a Adobe Data Collection rule.
+
+The configuration (initialization) is done in an Adobe Data Collection rule.
 
 You basically should create two rules:
 1. `0 - Library Loaded | 50 => Custom Code => Push Launch Loaded`
@@ -141,6 +142,8 @@ You basically should create two rules:
       }
       acdl_helper(config)
       ```
+
+See also: [Example Adobe Data Collection Property](https://experience.adobe.com/#/@provisionemeaptrsd/data-collection/tags/companies/COf862d022704d4b11a91f844bd6b34b65/properties/PRcf885ce23978419abc8a3730d71e5eed/overview)
 
 **Config options**
 
