@@ -111,22 +111,36 @@ Coming soon... ;-)
 
 The `acdl_helper` library is available at the global `window` object.
 The library has to be instantiated and configured before its first usage.
+The configuration (initialization) is done in a Adobe Data Collection rule.
 
-```javascript
-// Example config object iwth optional config for 'page-plugin'
-const config = {
-  env: "development",
-  event_prefix: "acdl_helper",
-  dependencies: ["launch:loaded"],
-  plugins: {
-    page: {
-      component_types: [{ "@type": "*/components/page*" }],
-      page_load_event: "load",
-    },
-  },
-}
-acdl_helper(config)
-```
+You basically should create two rules:
+1. `0 - Library Loaded | 50 => Custom Code => Push Launch Loaded`
+    - EVENT: Core - Library Loaded (Page Top)
+    - CONDITION: none
+    - ACTION: Custom Code
+      ```javascript
+      window.adobeDataLayer = window.adobeDataLayer || []
+      window.adobeDataLayer.push({event: 'launch:loaded'})
+      ```
+2. `DataLayer Event | 50 => acdl_helper:loaded => Config Helper Library`
+    - EVENT: Adobe Client Data Layer => Data Pushed => Listen to: `acdl_helper:loaded`
+    - CONDITION: none
+    - ACTION: Custom Code
+      ```javascript
+      // Example config object iwth optional config for 'page-plugin'
+      const config = {
+        env: "development",
+        event_prefix: "acdl_helper",
+        dependencies: ["launch:loaded"],
+        plugins: {
+          page: {
+            component_types: [{ "@type": "*/components/page*" }],
+            page_load_event: "load",
+          },
+        },
+      }
+      acdl_helper(config)
+      ```
 
 **Config options**
 
