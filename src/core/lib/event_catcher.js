@@ -36,11 +36,11 @@ function get_component_state(app) {
     }
     if (!is_dl_event(event)) {
       is_native_event(event)
-        ? app.logger.warning(`Catched native event: ${event?.$type}`)
+        ? app.logger.warning(`caughtaught native event: ${event?.$type}`)
         : app.logger.warning("Nothing to catch")
       return
     }
-    app.logger.info("Catched event ", { detail: { event: event.message?.event, rule: event.$rule?.name } })
+    app.logger.info("Caught event ", { detail: { event: event.message?.event, rule: event.$rule?.name } })
 
     const resolver = window.adobeDataLayer.getState
     return function (test, property) {
