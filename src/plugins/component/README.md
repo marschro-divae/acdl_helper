@@ -2,7 +2,7 @@
 
 ## Description
 
-Easifies the way to get whole state from a single 'core-component' (resides in adobeDatLayer.component) or only one single property.
+Easifies the way to get whole state from a single 'core-component' (resides in adobeDataLayer.component) or only one single property.
 
 - `name`: component
 - `dependencies`: ['cmp:loaded']
@@ -13,7 +13,7 @@ Easifies the way to get whole state from a single 'core-component' (resides in a
 ```javascript
 // Example
 plugins: [
-  components: {}
+  component: {}
 ]
 
 // => result
