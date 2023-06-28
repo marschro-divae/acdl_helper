@@ -73,7 +73,7 @@ async function load_plugins(app) {
  *
  */
 function init_plugins(plugins, env, event_prefix) {
-  Object.keys(plugins).map((plugin_key) => {
+  Object.keys(plugins).forEach((plugin_key) => {
     // 1. Check if the plugin correctly provides the impl() function
     if (!utils.is_function(plugins[plugin_key].impl)) {
       throw Error(utils.message(`Plugin "${plugin_key}" does not implement function impl()`).as_error)

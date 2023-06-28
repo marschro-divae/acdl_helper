@@ -17,7 +17,7 @@ export default function () {
     dependencies: [],
     events: [],
     config: {
-      clickables: [
+      register: [
         { selector: "[data-cmp-clickable-link]", event_name: "cmp:link_click", delay: 200 },
         { selector: "[data-cmp-clickable-cta]", event_name: "cmp:cta_click", delay: 200 },
       ],
@@ -45,7 +45,7 @@ export default function () {
       delay: "number",
     }
 
-    const test_result = context.config.clickables.map(utils.has_typed_properties(test))
+    const test_result = context.config.register.map(utils.has_typed_properties(test))
 
     if (!utils.all_good(test_result)) {
       context.logger.error('Invalid configuration of config "clickables', test_result)
@@ -55,7 +55,7 @@ export default function () {
     const clickable = setup_clickables(context)
 
     return function () {
-      context.config.clickables.forEach(clickable)
+      context.config.register.forEach(clickable)
       context.logger.success("Clickable elements initialized")
     }
   }

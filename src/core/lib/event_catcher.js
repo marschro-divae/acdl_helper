@@ -31,7 +31,7 @@ function is_object(obj) {
 function get_component_state(app) {
   return function (event) {
     if (!is_function(window.adobeDataLayer?.getState)) {
-      app.logger.error("Datalayer funtion getState() not available or event !")
+      app.logger.error("Datalayer funtion getState() not available !")
       return
     }
     if (!is_dl_event(event)) {

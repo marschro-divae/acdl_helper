@@ -27,6 +27,7 @@ export default function setup_clickables(context) {
     }
 
     addCustomEventListener(selector, "click", link_click_delay)
+    context.logger.success(`Register event "${event_name}" with delay ${delay}`)
   }
 }
 
@@ -37,7 +38,6 @@ function addCustomEventListener(selector, event, fn) {
     function (e) {
       const targetElement = e.target.matches(selector) ? e.target : e.target.closest(selector)
       if (targetElement) fn(e, targetElement)
-      return
     },
     true
   )

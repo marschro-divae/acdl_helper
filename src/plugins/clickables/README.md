@@ -17,10 +17,12 @@ For example you can add a data-attribute like `data-cmp-clickable-link` to your 
 ```javascript
 // Example
 plugins: [
-  clickables: [
-    { selector: '[data-cmp-clickable-link]', event_name: 'cmp:link_click', delay: 200 },
-    { selector: '[data-cmp-clickable-cta]', event_name: 'cmp:cta_click', delay: 200 }
-  ]
+  clickables: {
+    register: [
+      { selector: '[data-cmp-clickable-link]', event_name: 'cmp:link_click', delay: 200 },
+      { selector: '[data-cmp-clickable-cta]', event_name: 'cmp:cta_click', delay: 200 }
+    ]
+  }
 ]
 
 // => result
