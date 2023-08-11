@@ -39,4 +39,9 @@ window.onload = function () {
   }
   window.adobeDataLayer = window.adobeDataLayer || []
   window.adobeDataLayer.push({ event: "app:loaded" })
+
+  setTimeout(() => {
+    window.adobeDataLayer = window.adobeDataLayer || []
+    window.adobeDataLayer.push({ event: "user:loaded" })
+  }, 2500)
 }

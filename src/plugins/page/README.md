@@ -5,7 +5,7 @@
 According to the Adobe core-components documentation, any component that somehow shows up, can push the event `cmp:show` to the adobeDataLayer (slider-items, etc).
 This is also true for the page component itself.
 
-So in order to get the page data, you have to listen for all `cmp:show` adobeDataLayer-events, get its `pageInfo` reference, get the state of this referenced component, then check, if the `@type` is probably of a type, that reveals that it is the page-component, and if thats the case, you can access the page data. And all this effort just to get such a simple information like the `dc:title` field of the page.
+So, in order to get the page data, you have to listen for all `cmp:show` adobeDataLayer-events, get its `pageInfo` reference, get the state of this referenced component, then check, if the `@type` is probably of a type, that reveals that it is the page-component, and if thats the case, you can access the page data. And all this effort just to get such a simple information like the `dc:title` field of the page.
 
 This plugin helps you to do the 'heavy-lifting'. It listens for the `cmp:show` event, resolves the component type and simply provides you a convenient accessor for the page properties. It also pushes a customizable 'page-load' event to the adobeDataLayer if all is done.
 
@@ -19,15 +19,15 @@ This plugin helps you to do the 'heavy-lifting'. It listens for the `cmp:show` e
 // Example
 plugins: [
   page: {
-		component_types: [
-			{ '@type': '*/components/page' },
-			{ '@type': '*/components/page/content' },
-			{ '@type': '*/components/page/press' },
-			{ '@type': '*/components/page/event' },
-			{ '@type': '*/components/global/integrator-page' },
-			{ '@type': '*/components/global/page' }
-		],
-		page_load_event: 'load'
+    component_types: [
+      { '@type': '*/components/page' },
+      { '@type': '*/components/page/content' },
+      { '@type': '*/components/page/press' },
+      { '@type': '*/components/page/event' },
+      { '@type': '*/components/global/integrator-page' },
+      { '@type': '*/components/global/page' }
+    ],
+    page_load_event: 'load'
 	}
 ]
 

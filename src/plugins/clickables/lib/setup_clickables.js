@@ -3,6 +3,10 @@ export default function setup_clickables(context) {
     const { selector = null, event_name = "cmp:click", delay = 0 } = args
 
     const link_click_delay = function (event, element) {
+      if (!element.href) {
+        return
+      }
+
       if (delay !== 0) {
         event.preventDefault()
       }
