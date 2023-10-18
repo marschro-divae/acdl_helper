@@ -29,7 +29,7 @@ export default function page() {
       ],
       prefix: "dlh",
       page_load_event: "load",
-      delay_until: [],
+      page_load_dependencies: [],
     },
   }
 
@@ -62,15 +62,15 @@ export default function page() {
       })
     }
 
-    const test_delay_until_config = (maybe_delay_until_array) => {
-      if (maybe_delay_until_array && !Array.isArray(maybe_delay_until_array)) {
-        context.logger.error("config.delay_until is an invalid configuration")
+    const test_page_load_dependencies_config = (maybe_page_load_dependencies_array) => {
+      if (maybe_page_load_dependencies_array && !Array.isArray(maybe_page_load_dependencies_array)) {
+        context.logger.error("config.page_load_dependencies is an invalid configuration")
       }
     }
 
     return function () {
       test_component_types_config(context.config?.component_types)
-      test_delay_until_config(context.config?.delay_until)
+      test_page_load_dependencies_config(context.config?.page_load_dependencies)
     }
   }
 
@@ -87,7 +87,7 @@ export default function page() {
         }, 0)
       }
 
-      const done = utils.fulfiller(context.config.delay_until, push_page_data)
+      const done = utils.fulfiller(context.config.page_load_dependencies, push_page_data)
 
       const apply_test = get_component_data(event, window.adobeDataLayer.getState)
 
@@ -99,7 +99,7 @@ export default function page() {
 
       if (data) {
         context.shared.page_component = page_builder(event, context)
-        if (context.config.delay_until.length > 0) {
+        if (context.config.page_load_dependencies.length > 0) {
           context.acdl.add_event_listener("adobeDataLayer:event", done, { scope: "all" })
         } else {
           push_page_data()

@@ -30,7 +30,7 @@ plugins: [
       { '@type': '*/components/global/page' }
     ],
     page_load_event: 'load',
-    delay_until: [], // optional
+    page_load_dependencies: [], // optional
 	}
 ]
 
@@ -49,12 +49,12 @@ plugins: [
 
   - the configurable part of the event-name that is pushed to the adobeDataLayer
 
-- `delay_until`:
+- `page_load_dependencies`:
 
   - Array of dataLayer events. i.e. `['user:authenticated', 'cart:loaded']`
   - As a result, the acdl_helper page-load event will not be pushed to the dataLayer before those events were pushed to the dataLayer.
   - This is useful for asynchronous loaded states on the website, like user-login state or asynchrounous loaded shopping-carts, where one wants to make sure, that the page-load is not triggered before those informations are already in the dataLayer, in order to be send along with the first page-load event.
-  - ⚠️ ATTENTION: If the defined `delay_until` event(s) will never be pushed to the dataLayer the `acdl_helper` page-load event will never be pushed! Make sure, that the `delay_until` events are relaiable emitted (i.i if the user is not logged in, the event has to be also pushed to the dataLayer but with a different state - for example: _false_)
+  - ⚠️ ATTENTION: If the defined `page_load_dependencies` event(s) will never be pushed to the dataLayer the `acdl_helper` page-load event will never be pushed! Make sure, that the `page_load_dependencies` events are relaiable emitted (i.i if the user is not logged in, the event has to be also pushed to the dataLayer but with a different state - for example: _false_)
 
 ## Providers
 
@@ -66,4 +66,4 @@ acdl_helper.page.get() // returns the page properties
 
 ### v1.2.0
 
-- Feature: Delay the acdl_helper page-load event, by waiting for any other dataLayer event(s) - handle with care...
+- Feature: Dependencies for the acdl_helper page-load event - handle with care...
