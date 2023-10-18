@@ -46,7 +46,7 @@ export default function cleanup() {
     return function (_event) {
       const state = context.acdl.get_state()
       const result = Object.keys(state).filter((item) => {
-        return context.config.keep.includes(item) ? false : true
+        return !context.config.keep.includes(item)
       })
 
       result.forEach((item) => {

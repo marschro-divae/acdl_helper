@@ -18,7 +18,6 @@ In order to use the mcid property (Marketing Cloud Id), the plugin has to be con
 plugins: [
   user: {
     adobe_org_id: 'your_org_id',
-    tracking_server: 'your_tracking_server', // without protocol
     default_name: 'Anonymous'
   }
 ]
@@ -35,3 +34,11 @@ acdl_helper.user.add_segment("Funny Segment") // add segment to 'local_segments'
 acdl_helper.user.remove_segment("Funny Segment") // removes the given segment
 acdl_helper.user.clear_segments() // clears all segments
 ```
+
+## Release Notes
+
+### v1.2.0
+
+- Configuration `tracking_server` is no longer needed, as Adobe Identity Service works without that information.
+- Fix bug of missing mcid.
+- Error handling for missing configuiration `adobe_org_id`.

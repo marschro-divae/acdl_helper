@@ -69,7 +69,7 @@ async function load_plugins(app) {
  *
  * - If the plugins need more context, this is a good place to handle it
  * - Currently, we provide the logger, the plugins config, an event-prefix and the acdl helper functions
- * - and a shared object space, to be useed by plugins and t make it avaiable to the greater context
+ * - and a shared object space, to be used by plugins and to make it available to the greater context
  *
  */
 function init_plugins(plugins, env, event_prefix) {
@@ -99,7 +99,7 @@ function init_plugins(plugins, env, event_prefix) {
     // 5. Call the init() function of the plugin
     plugins[plugin_key].impl.init()
 
-    // 6. Check if the plugin provides optional provider functions. if so, invoke it with context
+    // 6. Check if the plugin provides optional provider functions. If so, invoke it with context
     if (utils.is_function(plugins[plugin_key].impl.provider)) {
       plugins[plugin_key].impl.provider = plugins[plugin_key].impl.provider(context)
     }
@@ -111,8 +111,8 @@ function init_plugins(plugins, env, event_prefix) {
 /**
  * BACKGROUND
  *
- * Every plugin, that uses dataLayer events also has to implement a handle_event() function,
- * that processes the event (delegate to plugin)
+ * Every plugin, that uses dataLayer events in order to do something, has to implement a handle_event() function.
+ * The handle_evetn() function processes the event (delegate to plugin)
  *
  */
 function register_plugin_event_handler(app) {

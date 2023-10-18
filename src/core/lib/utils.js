@@ -49,10 +49,10 @@ function gen_acdl() {
       window.adobeDataLayer.push(data)
     },
 
-    add_event_listener(event, handler) {
+    add_event_listener(event, handler, options) {
       window.adobeDataLayer = window.adobeDataLayer || []
       window.adobeDataLayer.push(function (dl) {
-        dl.addEventListener(event, handler)
+        dl.addEventListener(event, handler, options)
       })
     },
 

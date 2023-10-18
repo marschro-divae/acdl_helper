@@ -18,7 +18,6 @@ export default function user() {
     events: [],
     config: {
       adobe_org_id: "",
-      tracking_server: "",
       default_name: "Anonymous",
     },
   }
@@ -45,13 +44,17 @@ export default function user() {
         context.logger.error("Cannot initialize user - adobe optIn framework is missing!")
         return
       }
-      const visitor = window.Visitor.getInstance(context.config.adobe_org_id, {
-        trackingServer: context.config.tracking_server,
-        trackingServerSecure: context.config.tracking_server,
+      if (!context.config?.adobe_org_id) {
+        context.logger.error("Cannot initialize user - Config for 'adob_org_id' is missing!")
+        return
+      }
+
+      const visitor = window.Visitor.getInstance(context.config.adobe_org_id)
+      visitor.getVisitorValues((_values) => {
+        context.acdl.push(utils.update_object(["user", "name"], context.config.default_name))
+        context.acdl.push(utils.update_object(["user", "mcid"], visitor.getMarketingCloudVisitorID()))
+        context.acdl.push(utils.update_object(["user", "local_segments"], []))
       })
-      context.acdl.push(utils.update_object(["user", "name"], context.config.default_name))
-      context.acdl.push(utils.update_object(["user", "mcid"], visitor.getMarketingCloudVisitorID()))
-      context.acdl.push(utils.update_object(["user", "local_segments"], []))
     }
   }
 
