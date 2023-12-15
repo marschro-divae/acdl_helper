@@ -7,7 +7,8 @@ module.exports = {
     {
       name: "acdl_helper",
       serializationFormat: "xml",
-      longCacheKey: "${project.version}-${buildNumber}-${buildstamp}",
+      // this got to be removed if we build for Clud SDK
+      // longCacheKey: "${project.version}-${buildNumber}-${buildstamp}",
       allowProxy: true,
       cssProcessor: ["default:none", "min:none"],
       jsProcessor: ["default:none", "min:none"],
