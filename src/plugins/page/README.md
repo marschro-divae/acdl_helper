@@ -30,7 +30,12 @@ plugins: [
       { '@type': '*/components/global/page' }
     ],
     page_load_event: 'load',
-    page_load_dependencies: [], // optional
+    page_load_dependencies: [
+      'user:loaded',
+      { event: 'cart:loaded', cond: { '@type': '*/components/page/cart' } },
+      { event: 'blog:comment:loaded', cond: { '@type': '*components/page/blog*' } },
+      { event: 'some:fancy:event', cond: {'dc:title': 'Home'} },
+    ]
 	}
 ]
 
@@ -54,7 +59,14 @@ plugins: [
   - Array of dataLayer events. i.e. `['user:authenticated', 'cart:loaded']`
   - As a result, the acdl_helper page-load event will not be pushed to the dataLayer before those events were pushed to the dataLayer.
   - This is useful for asynchronous loaded states on the website, like user-login state or asynchrounous loaded shopping-carts, where one wants to make sure, that the page-load is not triggered before those informations are already in the dataLayer, in order to be send along with the first page-load event.
-  - ⚠️ ATTENTION: If the defined `page_load_dependencies` event(s) will never be pushed to the dataLayer the `acdl_helper` page-load event will never be pushed! Make sure, that the `page_load_dependencies` events are relaiable emitted (i.i if the user is not logged in, the event has to be also pushed to the dataLayer but with a different state - for example: _false_)
+  - It is also possible to formulate advanced conditions test-objects:
+    ```javascript
+    // the page-load is not pushed to the dataLayer, before the event
+    // 'blog:comment:loaded' has arrived in the dataLayer
+    // The conditions says, that this should only be considered, if the page @type is a blog
+    { event: 'blog:comment:loaded', cond: { '@type': '*components/page/blog*' } },
+    ```
+  - ⚠️ ATTENTION: If the defined `page_load_dependencies` event(s) will never be pushed to the dataLayer the `acdl_helper` page-load event will never be pushed! Make sure, that the `page_load_dependencies` events are relaiable emitted (i.i if the user is not logged in, the event has to be also pushed to the dataLayer but with a different state - for example: _false_) - If that happens, the pageLoad is pushed before the page is left via an attacched `beforeunload` listener. But its absolutely not guaranteed, that analytics data will be send successfully.
 
 ## Providers
 
@@ -63,6 +75,10 @@ acdl_helper.page.get() // returns the page properties
 ```
 
 ## Release Notes
+
+### v1.3.0
+
+- More sophisticated page-load dependency management with testable objects
 
 ### v1.2.0
 

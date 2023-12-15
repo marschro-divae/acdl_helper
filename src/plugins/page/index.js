@@ -65,6 +65,15 @@ export default function page() {
     const test_page_load_dependencies_config = (maybe_page_load_dependencies_array) => {
       if (maybe_page_load_dependencies_array && !Array.isArray(maybe_page_load_dependencies_array)) {
         context.logger.error("config.page_load_dependencies is an invalid configuration")
+        return
+      }
+      const errors = maybe_page_load_dependencies_array
+        .map((i) => {
+          return utils.is_valid_dependecies_item(i)
+        })
+        .filter((i) => i)
+      if (errors.length > 0) {
+        context.logger.error("config.page_load_dependencies has errors: ", errors)
       }
     }
 
@@ -75,6 +84,7 @@ export default function page() {
   }
 
   function handle_event(context) {
+    let done
     return function (event) {
       const push_page_data = () => {
         context.acdl.remove_event_listener("adobeDataLayer:event", done)
@@ -87,7 +97,7 @@ export default function page() {
         }, 0)
       }
 
-      const done = utils.fulfiller(context.config.page_load_dependencies, push_page_data)
+      done = utils.fulfiller(context.config.page_load_dependencies, push_page_data)
 
       const apply_test = get_component_data(event, window.adobeDataLayer.getState)
 
@@ -100,6 +110,7 @@ export default function page() {
       if (data) {
         context.shared.page_component = page_builder(event, context)
         if (context.config.page_load_dependencies.length > 0) {
+          done = done(context.acdl.get_state(context.shared.page_component))
           context.acdl.add_event_listener("adobeDataLayer:event", done, { scope: "all" })
         } else {
           push_page_data()
