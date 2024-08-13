@@ -97,7 +97,7 @@ export default function page() {
         }, 0)
       }
 
-      done = utils.fulfiller(context.config.page_load_dependencies, push_page_data)
+      done = utils.fulfiller(context.logger, context.config.page_load_dependencies, push_page_data)
 
       const apply_test = get_component_data(event, window.adobeDataLayer.getState)
 

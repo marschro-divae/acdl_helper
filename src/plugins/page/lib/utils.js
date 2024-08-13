@@ -10,37 +10,45 @@ function get_page_data(page, property_name) {
   return page && property_name ? page[property_name] : page && !property_name ? page : undefined
 }
 
-function fulfiller(dependencies, callback) {
+function fulfiller(logger, dependencies, callback) {
   if (!Array.isArray(dependencies)) {
     return
   }
+  let resolved = false
+  const relevant_dependencies = []
   const last_resort = (_e) => callback()
   window.addEventListener("beforeunload", last_resort)
   return function (page) {
     return function (event) {
-      dependencies = dependencies.filter((dependency) => {
-        // the case if the dependency is just a string event name
-        if (dependency === event.event) {
-          return false
+      if (!resolved) {
+        dependencies = dependencies.filter((dependency) => {
+          // the case if the dependency is just a string event name
+          if (dependency === event.event) {
+            relevant_dependencies.push(dependency)
+            return false
+          }
+          // there is a dependency but its not relevant at all for this page
+          if (_is_object(dependency) && !test_dataLayer_object(page, dependency.cond)) {
+            return false
+          }
+          // the case if the dependency is a testable object
+          // optinally we could test for test_dataLayer_object(page, dependency.cond, { one_of: true })
+          if (
+            _is_object(dependency) &&
+            dependency.event === event.event &&
+            test_dataLayer_object(page, dependency.cond)
+          ) {
+            relevant_dependencies.push(dependency)
+            return false
+          }
+          return true
+        })
+        if (dependencies.length === 0) {
+          window.removeEventListener("beforeunload", last_resort)
+          logger.success("Resolved page dependencies", relevant_dependencies)
+          resolved = true
+          callback()
         }
-        // there is a dependency but its not relevant at all for this page
-        if (_is_object(dependency) && !test_dataLayer_object(page, dependency.cond)) {
-          return false
-        }
-        // the case if the dependency is a testable object
-        // optinally we could test for test_dataLayer_object(page, dependency.cond, { one_of: true })
-        if (
-          _is_object(dependency) &&
-          dependency.event === event.event &&
-          test_dataLayer_object(page, dependency.cond)
-        ) {
-          return false
-        }
-        return true
-      })
-      if (dependencies.length === 0) {
-        window.removeEventListener("beforeunload", last_resort)
-        callback()
       }
     }
   }
