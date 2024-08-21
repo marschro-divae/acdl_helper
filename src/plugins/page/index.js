@@ -97,8 +97,6 @@ export default function page() {
         }, 0)
       }
 
-      done = utils.fulfiller(context.logger, context.config.page_load_dependencies, push_page_data)
-
       const apply_test = get_component_data(event, window.adobeDataLayer.getState)
 
       const testable_types = context.config.component_types
@@ -110,6 +108,7 @@ export default function page() {
       if (data) {
         context.shared.page_component = page_builder(event, context)
         if (context.config.page_load_dependencies.length > 0) {
+          done = utils.fulfiller(context.logger, context.config.page_load_dependencies, push_page_data)
           done = done(context.acdl.get_state(context.shared.page_component))
           context.acdl.add_event_listener("adobeDataLayer:event", done, { scope: "all" })
         } else {

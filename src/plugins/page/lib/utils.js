@@ -14,6 +14,7 @@ function fulfiller(logger, dependencies, callback) {
   if (!Array.isArray(dependencies)) {
     return
   }
+
   let resolved = false
   const relevant_dependencies = []
   const last_resort = (_e) => callback()
