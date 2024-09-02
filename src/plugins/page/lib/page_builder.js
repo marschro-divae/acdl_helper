@@ -18,7 +18,7 @@ export default function page_builder(event, context) {
       [pn("tenant")]: repo_path_to_tenant(page["repo:path"]),
       [pn("pagename")]: repo_path_to_pagename(page["repo:path"]),
       [pn("pagetype")]: template_path_to_pagetype(page["xdm:template"]),
-      [pn("cid")]: campaign_parameter_to_cid(document.location.search),
+      [pn("cid")]: campaign_parameter_to_cid(context.config.cid_mapping, document.location.search),
       [pn("pagetags")]: joined_tags,
       [pn("ownPath")]: path,
       [pn("ownId")]: path.split(".")[path.split(".").length - 1],

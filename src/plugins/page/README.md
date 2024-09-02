@@ -35,7 +35,15 @@ plugins: [
       { event: 'cart:loaded', cond: { '@type': '*/components/page/cart' } },
       { event: 'blog:comment:loaded', cond: { '@type': '*components/page/blog*' } },
       { event: 'some:fancy:event', cond: {'dc:title': 'Home'} },
-    ]
+    ],
+    cid_mapping: {
+      utm_source: "",
+      utm_medium: "",
+      utm_campaign: "",
+      utm_term: "",
+      utm_content: "",
+      utm_id: "",
+    },
 	}
 ]
 
@@ -68,6 +76,49 @@ plugins: [
     ```
   - ⚠️ ATTENTION: If the defined `page_load_dependencies` event(s) will never be pushed to the dataLayer the `acdl_helper` page-load event will never be pushed! Make sure, that the `page_load_dependencies` events are relaiable emitted (i.i if the user is not logged in, the event has to be also pushed to the dataLayer but with a different state - for example: _false_) - If that happens, the pageLoad is pushed before the page is left via an attacched `beforeunload` listener. But its absolutely not guaranteed, that analytics data will be send successfully.
 
+- `cid_mapping`:
+
+  - An object that allows to list all query parameters that should be merged into the campaign id (cid), a `:` seperated string of campaign informations
+  - The order of the object properties define the order in the cid string. I.E:
+  - ```javascript
+    /*
+      Given query parameters are:
+      http://localhost:3000/?utm_source=linkedIn&utm_medium=banner&utm_campaign=apply_for_groundservices&utm_id=12345&utm_term=jobsearch&utm_content=variant+A
+    */
+
+    /*
+      The configured Mapping
+    */
+    cid_mapping: {
+      utm_source: "",
+      utm_medium: "",
+      utm_campaign: "",
+      utm_term: "",
+      utm_content: "",
+      utm_id: "",
+    },
+
+    // Result
+    const result_cid = "linkedIn:banner:apply_for_groundservices:jobsearch:variant+A:12345"
+
+    /*
+      Further explanation:
+      Putting the `utm_id` as first property in the object would the result in a cid-string with the utm_id set to the first place
+      (Order is important for later re-structuring via classification rule sets!)
+    */
+    ```
+
+  - This object is not bound to the classical `utm parameters`. You can extend the object as desired in order to parse query parameters to the `cid`
+
+  - HINT!
+
+    ⚠️ Make sure to create a classification ruleset in Adobe Analytics for de-structuring
+    the campaign informations again into the classification fields of the campaign variable (v0)
+
+    Like in the example below:
+
+    ![Example classification rule set](/server/assets/images/classification_rule_example.png)
+
 ## Providers
 
 ```javascript
@@ -75,6 +126,10 @@ acdl_helper.page.get() // returns the page properties
 ```
 
 ## Release Notes
+
+### v1.4.0
+
+- Configurable campaign query parameter to cid parsing
 
 ### v1.3.0
 

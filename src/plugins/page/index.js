@@ -30,6 +30,14 @@ export default function page() {
       prefix: "dlh",
       page_load_event: "load",
       page_load_dependencies: [],
+      cid_mapping: {
+        utm_source: "",
+        utm_medium: "",
+        utm_campaign: "",
+        utm_term: "",
+        utm_content: "",
+        utm_id: "",
+      },
     },
   }
 
