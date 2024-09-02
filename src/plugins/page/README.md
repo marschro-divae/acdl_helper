@@ -20,31 +20,31 @@ The page-load event, that is pushed to the dataLayer by this plugin can also be 
 ```javascript
 // Example
 plugins: [
-  page: {
-    component_types: [
-      { '@type': '*/components/page' },
-      { '@type': '*/components/page/content' },
-      { '@type': '*/components/page/press' },
-      { '@type': '*/components/page/event' },
-      { '@type': '*/components/global/integrator-page' },
-      { '@type': '*/components/global/page' }
-    ],
-    page_load_event: 'load',
-    page_load_dependencies: [
-      'user:loaded',
-      { event: 'cart:loaded', cond: { '@type': '*/components/page/cart' } },
-      { event: 'blog:comment:loaded', cond: { '@type': '*components/page/blog*' } },
-      { event: 'some:fancy:event', cond: {'dc:title': 'Home'} },
-    ],
-    cid_mapping: {
-      utm_source: "",
-      utm_medium: "",
-      utm_campaign: "",
-      utm_term: "",
-      utm_content: "",
-      utm_id: "",
-    },
-	}
+    page: {
+        component_types: [
+            { '@type': '*/components/page' },
+            { '@type': '*/components/page/content' },
+            { '@type': '*/components/page/press' },
+            { '@type': '*/components/page/event' },
+            { '@type': '*/components/global/integrator-page' },
+            { '@type': '*/components/global/page' }
+        ],
+        page_load_event: 'load',
+        page_load_dependencies: [
+            'user:loaded',
+            { event: 'cart:loaded', cond: { '@type': '*/components/page/cart' } },
+            { event: 'blog:comment:loaded', cond: { '@type': '*components/page/blog*' } },
+            { event: 'some:fancy:event', cond: {'dc:title': 'Home'} },
+        ],
+        cid_mapping: {
+            utm_source: '',
+            utm_medium: '',
+            utm_campaign: '',
+            utm_term: '',
+            utm_content: '',
+            utm_id: '',
+        },
+    }
 ]
 
 // => result
