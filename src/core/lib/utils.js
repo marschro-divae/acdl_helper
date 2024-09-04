@@ -23,10 +23,10 @@ function is_function(maybe_fn) {
 
 function message(message, prefix = STATICS.LOG_PREFIX) {
   return {
-    as_info: `${prefix} 🦋 ${message}`,
-    as_success: `${prefix} 🥦 ${message}`,
-    as_warning: `${prefix} 🍋 ${message}`,
-    as_error: `${prefix} 🍎 ${message}`,
+    as_info: `%c${prefix} – ${message}`,
+    as_success: `%c${prefix} – ${message}`,
+    as_warning: `%c${prefix} – ${message}`,
+    as_error: `%c${prefix} – ${message}`,
   }
 }
 
@@ -34,10 +34,10 @@ function logger(environment = "development") {
   const allow = environment === "development"
   return function (prefix = "[acdl_helper]") {
     return {
-      info: (msg, ...args) => allow && console.log(message(msg, prefix).as_info, ...args),
-      success: (msg, ...args) => allow && console.log(message(msg, prefix).as_success, ...args),
-      warning: (msg, ...args) => allow && console.log(message(msg, prefix).as_warning, ...args),
-      error: (msg, ...args) => allow && console.log(message(msg, prefix).as_error, ...args),
+      info: (msg, ...args) => allow && console.log(message(msg, prefix).as_info, "", ...args),
+      success: (msg, ...args) => allow && console.log(message(msg, prefix).as_success, "color: green", ...args),
+      warning: (msg, ...args) => allow && console.log(message(msg, prefix).as_warning, "color: orange", ...args),
+      error: (msg, ...args) => allow && console.log(message(msg, prefix).as_error, "color: red", ...args),
     }
   }
 }

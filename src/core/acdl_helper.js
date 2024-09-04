@@ -8,6 +8,7 @@ export default function acdl_helper(app) {
   app.logger.success("acdl_helper library initialized... API now available")
 
   return Object.freeze({
+    // eslint-disable-next-line no-undef
     version: __VERSION__,
     catch: event_catcher(app),
     ...Object.freeze(plugin_utils.get_all_plugin_provider(app)),

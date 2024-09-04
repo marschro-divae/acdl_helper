@@ -23,6 +23,10 @@
           path: "page.content\u002D2b9114832d",
         },
       })
+      setTimeout(() => {
+        window.adobeDataLayer = window.adobeDataLayer || []
+        window.adobeDataLayer.push({ event: "comments:loaded" })
+      }, 2000)
     </script>
     <div id="page">
       <div id="header">

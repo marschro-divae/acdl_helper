@@ -18,6 +18,12 @@ import plug from "./lib/plugin_utils"
 
     app.logger.info("Starting initialization...")
 
+    if (!document.body.hasAttribute("data-cmp-data-layer-enabled")) {
+      app.logger.error("Adobe CLient Data Layer is not enabled!", {
+        hint: "Enable this configuration in AEM via ca-config 'DataLayer' (Part of Adobe Core Components).",
+      })
+    }
+
     try {
       app = await plug.load_plugins(app)
       app.logger.info(`${Object.keys(app.plugins).length} Plugins initialized ...`)
