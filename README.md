@@ -81,7 +81,7 @@ Latest version to be found here: [crx-package releases](/crx-package/)
   npm run build:crxbundle
   ```
 
-### 4. Clientlib integration
+### 4. Adobe Experience Manager Clientlib integration
 
 - **AEM htl**
 
@@ -105,10 +105,19 @@ Coming soon... ;-)
 
 ---
 
-### Integration
+### Alternative Integrations
 
 1. The easiest way is to install the acdl_helper [latest release](/crx-package/) via crx-package manager
-2. Projects without crx access, may want to unclude the package delivery via the build-process
+   - Projects without crx access, may want to unclude the package delivery via the build-process
+2. Include via jsdelivr from github develop branch
+   - Change the version partial of the past to load other versions (first available is `1.5.0`),
+
+```html
+<script
+  src="https://cdn.jsdelivr.net/gh/marschro-divae/acdl_helper@develop/release/1.5.0/acdl_helper.js"
+  async
+></script>
+```
 
 ### Initialization
 
