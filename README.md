@@ -42,7 +42,7 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 
 1. Clone this repo
 
-2. Update `.env_template file with appropriate values` and rename to `.env`
+2. Update `.env_template` file with appropriate values and rename to `.env`
 
 3. Then install all dependencies
 
