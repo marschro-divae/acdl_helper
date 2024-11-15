@@ -41,13 +41,15 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 
 1. Clone this repo
 
-2. Then install all dependencies
+2. Update `.env_template file with appropriate values` and rename to `.env`
+
+3. Then install all dependencies
 
    ```
    npm install
    ```
 
-3. Last step: Start the dev server and the dev build by
+4. Last step: Start the dev server and the dev build by
    ```
    npm start
    ```
@@ -115,33 +117,34 @@ The library has to be instantiated and configured before its first usage.
 The configuration (initialization) is done in an Adobe Data Collection rule.
 
 You basically should create two rules:
+
 1. `0 - Library Loaded | 50 => Custom Code => Push Launch Loaded`
-    - EVENT: Core - Library Loaded (Page Top)
-    - CONDITION: none
-    - ACTION: Custom Code
-      ```javascript
-      window.adobeDataLayer = window.adobeDataLayer || []
-      window.adobeDataLayer.push({event: 'launch:loaded'})
-      ```
+   - EVENT: Core - Library Loaded (Page Top)
+   - CONDITION: none
+   - ACTION: Custom Code
+     ```javascript
+     window.adobeDataLayer = window.adobeDataLayer || []
+     window.adobeDataLayer.push({ event: "launch:loaded" })
+     ```
 2. `DataLayer Event | 50 => acdl_helper:loaded => Config Helper Library`
-    - EVENT: Adobe Client Data Layer => Data Pushed => Listen to: `acdl_helper:loaded`
-    - CONDITION: none
-    - ACTION: Custom Code
-      ```javascript
-      // Example config object iwth optional config for 'page-plugin'
-      const config = {
-        env: "development",
-        event_prefix: "acdl_helper",
-        dependencies: ["launch:loaded"],
-        plugins: {
-          page: {
-            component_types: [{ "@type": "*/components/page*" }],
-            page_load_event: "load",
-          },
-        },
-      }
-      acdl_helper(config)
-      ```
+   - EVENT: Adobe Client Data Layer => Data Pushed => Listen to: `acdl_helper:loaded`
+   - CONDITION: none
+   - ACTION: Custom Code
+     ```javascript
+     // Example config object iwth optional config for 'page-plugin'
+     const config = {
+       env: "development",
+       event_prefix: "acdl_helper",
+       dependencies: ["launch:loaded"],
+       plugins: {
+         page: {
+           component_types: [{ "@type": "*/components/page*" }],
+           page_load_event: "load",
+         },
+       },
+     }
+     acdl_helper(config)
+     ```
 
 See also: [Example Adobe Data Collection Property](https://experience.adobe.com/#/@provisionemeaptrsd/data-collection/tags/companies/COf862d022704d4b11a91f844bd6b34b65/properties/PRcf885ce23978419abc8a3730d71e5eed/overview)
 
