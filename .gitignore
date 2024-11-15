@@ -14,3 +14,8 @@ jcr_root/apps/divae/acdl_helper
 
 # IDE stuff
 .vscode
+.env
+
+# Gitlab
+.gitlab
+
