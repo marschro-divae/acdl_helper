@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkacdl_helper=self.webpackChunkacdl_helper||[]).push([[804],{804:(e,n,t)=>{function c(){return{meta:Object.freeze({name:"plugin_name",dependencies:[],events:[],config:{}}),impl:e=>({init:function(){},handle_event:function(e){},provider:Object.freeze({foo:e=>e})})}}t.r(n),t.d(n,{default:()=>c})}}]);
