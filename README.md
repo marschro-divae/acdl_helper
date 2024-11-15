@@ -35,6 +35,7 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 - node > v16
 - npm
 - git
+- java 11 (optional, if crx-package should be build)
 - maven (optional, if crx-package should be build)
 
 ### 2. Run development environment
