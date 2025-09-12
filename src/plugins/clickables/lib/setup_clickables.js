@@ -13,8 +13,20 @@ export default function setup_clickables(context) {
 
       const dataLayer = parseDataLayer(element)
 
+      const openLink = () => {
+        if (element.target === "_blank") {
+          const newWin = window.open(element.href, "_blank");
+          if (!newWin) {
+            // Fallback if window.open is blocked
+            window.location = element.href;
+          }
+        } else {
+          window.location = element.href
+        }
+      }
+
       if (!dataLayer) {
-        window.location = element.href
+        openLink()
         return
       }
 
@@ -24,9 +36,7 @@ export default function setup_clickables(context) {
       })
 
       if (delay !== null) {
-        setTimeout(function () {
-          window.location = element.href
-        }, delay)
+        setTimeout(openLink, delay)
       }
     }
 
