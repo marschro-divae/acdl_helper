@@ -53,13 +53,18 @@ function get_component_state(app) {
 
 function get_component_data(e, resolver) {
   if (!e) return undefined
-  if (
+
+  const is_reference =
     Object.prototype.hasOwnProperty.call(e, "eventInfo") &&
-    Object.prototype.hasOwnProperty.call(e.eventInfo, "path")
-  ) {
-    const data_layer_object = resolver(e.eventInfo.path)
+    Object.prototype.hasOwnProperty.call(e.eventInfo, "reference")
+  const is_path =
+    Object.prototype.hasOwnProperty.call(e, "eventInfo") && Object.prototype.hasOwnProperty.call(e.eventInfo, "path")
+  const resolve_info = is_reference ? e.eventInfo.reference : is_path ? e.eventInfo.path : null
+
+  if (resolve_info) {
+    const data_layer_object = resolver(resolve_info)
     return data_layer_object !== undefined
-      ? test_property(e, data_layer_object)
+      ? test_property(e, data_layer_object, resolve_info)
       : do_not_test_property(e, data_layer_object)
   }
   return function (_filter, _property) {
@@ -67,14 +72,14 @@ function get_component_data(e, resolver) {
   }
 }
 
-function test_property(e, data_layer_object) {
+function test_property(e, data_layer_object, resolve_info) {
   return function (test, property) {
     const fsProperty = is_string(test) && !property ? test : property
     const fsTest = is_object(test) ? test : undefined
     return test_dataLayer_object(data_layer_object, fsTest, { one_of: true })
       ? fsProperty
-        ? enrich_with_own_properties(data_layer_object, e.eventInfo.path)[fsProperty]
-        : enrich_with_own_properties(data_layer_object, e.eventInfo.path)
+        ? enrich_with_own_properties(data_layer_object, resolve_info)[fsProperty]
+        : enrich_with_own_properties(data_layer_object, resolve_info)
       : undefined
   }
 }

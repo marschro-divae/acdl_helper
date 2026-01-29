@@ -1,0 +1,32 @@
+"use strict";
+/*
+ * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+(self["webpackChunkacdl_helper"] = self["webpackChunkacdl_helper"] || []).push([["src_plugins_usercentrics_index_js"],{
+
+/***/ "./src/plugins/usercentrics/index.js":
+/*!*******************************************!*\
+  !*** ./src/plugins/usercentrics/index.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ usercentrics)\n/* harmony export */ });\n/* harmony import */ var _lib_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./lib/utils */ \"./src/plugins/usercentrics/lib/utils.js\");\n\n\n/**\n * GENERAL PLUGIN ARCHITECTURE\n *\n * General Hints\n * - Dependencies are registered in the acdl_helper dependencies array (can block the whole thing)\n * - Implement at least init()\n * - If dataLayer events should be handled, handle_event() has to be implemented\n * - DataLayer events to listen on, have to be defined in the `events` array\n * - Config can be overwritten via remote-configuration => always address config from context\n */\n\nfunction usercentrics() {\n  const meta = {\n    name: \"usercentrics\",\n    dependencies: [\"consent_status\", \"launch:loaded\"],\n    events: [\"consent_status\"],\n    config: {\n      protocol: {\n        \"Adobe Analytics\": \"ANALYTICS\",\n        \"Adobe Target\": \"TARGET\",\n      },\n      push_after: \"\",\n    },\n  }\n\n  return {\n    meta: Object.freeze(meta),\n\n    impl(context) {\n      return {\n        init: init(context),\n        handle_event: handle_event(context),\n        provider: provider(context),\n      }\n    },\n  }\n\n  /**\n   * IMPLEMENTATION FUNCTIONS\n   */\n\n  function init(context) {\n    return function () {\n      const ui_language_handler = (_event) => {\n        window.UC_UI.updateLanguage(document.documentElement.lang)\n        window.removeEventListener(\"UC_UI_INITIALIZED\", ui_language_handler)\n      }\n\n      if (window.UC_UI && window.UC_UI.isInitialized()) {\n        window.UC_UI.updateLanguage(document.documentElement.lang)\n      } else {\n        window.addEventListener(\"UC_UI_INITIALIZED\", ui_language_handler)\n      }\n      if (!window.adobe?.optIn) {\n        context.logger.error(\"Adobe OptIn Framwork not available - Please install via ECID Launch Extension\")\n      } else {\n        window.adobe.optIn.on(\"complete\", (consent) => {\n          context.logger.success(\"Consent updated: \", { consent })\n          context.acdl.push({ event: `${context.event_prefix}:consent_applied` })\n          context.acdl.push(_lib_utils__WEBPACK_IMPORTED_MODULE_0__[\"default\"].update_object([\"user\", \"consent\", \"adobe\"], consent))\n          if (context.config.push_after) {\n            context.acdl.push({ event: context.config.push_after })\n          }\n        })\n      }\n    }\n  }\n\n  function handle_event(context) {\n    return function (event) {\n      if (!context?.config?.protocol) {\n        context.logger.warning(\"No custom protocol configured - using fallback protocol!\")\n      }\n\n      if (!window.adobe?.optIn) {\n        context.logger.error(\"Cannot handle event - adobe optIn framework is missing!\")\n        return\n      }\n\n      const protocol = context.config.protocol\n      const ecid_needed = Object.keys(event).reduce((acc, key) => {\n        if (Object.prototype.hasOwnProperty.call(protocol, key)) {\n          if (event[key]) {\n            window.adobe.optIn.approve(window.adobe.OptInCategories[protocol[key]], true)\n            return true\n          } else {\n            window.adobe.optIn.deny(window.adobe.OptInCategories[protocol[key]], true)\n            return acc\n          }\n        }\n        return acc\n      }, false)\n\n      ecid_needed\n        ? window.adobe.optIn.approve(window.adobe.OptInCategories[\"ECID\"], true)\n        : window.adobe.optIn.deny(window.adobe.OptInCategories[\"ECID\"], true)\n      window.adobe.optIn.complete()\n    }\n  }\n\n  function provider(context) {\n    return Object.freeze({\n      get_active_language() {\n        return window.UC_UI.getActiveLanguage()\n      },\n\n      get_base_info() {\n        return window.UC_UI.getServicesBaseInfo()\n      },\n\n      async get_full_info() {\n        try {\n          const full_info = await window.UC_UI.getServicesFullInfo()\n          return full_info\n        } catch (err) {\n          context.logger.error(\"Get full info from usercentrics failed:\", err)\n        }\n      },\n    })\n  }\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/usercentrics/index.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/usercentrics/lib/utils.js":
+/*!***********************************************!*\
+  !*** ./src/plugins/usercentrics/lib/utils.js ***!
+  \***********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (__WEBPACK_DEFAULT_EXPORT__)\n/* harmony export */ });\n/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Object.freeze({\n  update_object,\n}));\n\nfunction update_object(pathArr, data) {\n  const obj = {}\n  pathArr.reduce(function (acc, item, index, arr) {\n    if (index === arr.length - 1) return (acc[item] = data)\n    return (acc[item] = {})\n  }, obj)\n  return obj\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/usercentrics/lib/utils.js?");
+
+/***/ })
+
+}]);

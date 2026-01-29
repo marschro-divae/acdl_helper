@@ -2,19 +2,24 @@ import test_dataLayer_object from "./test_dataLayer_object"
 
 export default function get_component_data(e, resolver) {
   if (!e) return undefined
-  if (
+
+  const is_reference =
     Object.prototype.hasOwnProperty.call(e, "eventInfo") &&
-    Object.prototype.hasOwnProperty.call(e.eventInfo, "path")
-  ) {
-    const dataLayerObject = resolver(e.eventInfo.path)
+    Object.prototype.hasOwnProperty.call(e.eventInfo, "reference")
+  const is_path =
+    Object.prototype.hasOwnProperty.call(e, "eventInfo") && Object.prototype.hasOwnProperty.call(e.eventInfo, "path")
+  const resolve_info = is_reference ? e.eventInfo.reference : is_path ? e.eventInfo.path : null
+
+  if (resolve_info) {
+    const dataLayerObject = resolver(resolve_info)
     return dataLayerObject !== undefined
       ? function (test, property) {
           const fsProperty = typeof test === "string" && !property ? test : property
           const fsTest = typeof test === "object" ? test : undefined
           return test_dataLayer_object(dataLayerObject, fsTest, { one_of: true })
             ? fsProperty
-              ? enrich_with_own_properties(dataLayerObject, e.eventInfo.path)[fsProperty]
-              : enrich_with_own_properties(dataLayerObject, e.eventInfo.path)
+              ? enrich_with_own_properties(dataLayerObject, resolve_info)[fsProperty]
+              : enrich_with_own_properties(dataLayerObject, resolve_info)
             : undefined
         }
       : function (_filter, _property) {

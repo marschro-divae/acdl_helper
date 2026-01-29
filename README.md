@@ -32,7 +32,7 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 
 ### 1. Prerequisites
 
-- node > v16
+- node > v23
 - npm
 - git
 - java 11 (optional, if crx-package should be build)

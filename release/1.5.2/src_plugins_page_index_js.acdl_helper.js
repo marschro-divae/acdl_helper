@@ -1,0 +1,122 @@
+"use strict";
+/*
+ * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+(self["webpackChunkacdl_helper"] = self["webpackChunkacdl_helper"] || []).push([["src_plugins_page_index_js"],{
+
+/***/ "./src/plugins/page/index.js":
+/*!***********************************!*\
+  !*** ./src/plugins/page/index.js ***!
+  \***********************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ page)\n/* harmony export */ });\n/* harmony import */ var _lib_get_component_data__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./lib/get_component_data */ \"./src/plugins/page/lib/get_component_data.js\");\n/* harmony import */ var _lib_page_builder__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./lib/page_builder */ \"./src/plugins/page/lib/page_builder.js\");\n/* harmony import */ var _lib_utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./lib/utils */ \"./src/plugins/page/lib/utils.js\");\n\n\n\n\n/**\n * GENERAL PLUGIN ARCHITECTURE\n *\n * General Hints\n * - Dependencies are registered in the acdl_helper dependencies array (can block the whole thing)\n * - Implement at least init()\n * - If dataLayer events should be handled, handle_event() has to be implemented\n * - DataLayer events to listen on, have to be defined in the `events` array\n * - Config can be overwritten via remote-configuration => always address config from context\n */\n\nfunction page() {\n  const meta = {\n    name: \"page\",\n    dependencies: [],\n    events: [\"cmp:show\"],\n    config: {\n      component_types: [\n        { \"@type\": \"*/components/page\" },\n        { \"@type\": \"*/components/page/content\" },\n        { \"@type\": \"*/components/page/press\" },\n        { \"@type\": \"*/components/page/event\" },\n        { \"@type\": \"*/components/global/integrator-page\" },\n        { \"@type\": \"*/components/global/page\" },\n      ],\n      prefix: \"dlh\",\n      page_load_event: \"load\",\n      page_load_dependencies: [],\n      cid_mapping: {\n        utm_source: \"\",\n        utm_medium: \"\",\n        utm_campaign: \"\",\n        utm_term: \"\",\n        utm_content: \"\",\n        utm_id: \"\",\n      },\n    },\n  }\n\n  return {\n    meta: Object.freeze(meta),\n\n    impl(context) {\n      return {\n        init: init(context),\n        handle_event: handle_event(context),\n        provider: provider(context),\n      }\n    },\n  }\n\n  /**\n   * IMPLEMENTATION FUNCTIONS\n   */\n\n  function init(context) {\n    const test_component_types_config = (to_be_tested) => {\n      if (to_be_tested && !Array.isArray(to_be_tested)) {\n        context.logger.error(\"config.component_types is an invalid configuration\")\n        return\n      }\n      to_be_tested.forEach((test) => {\n        if (!Object.prototype.hasOwnProperty.call(test, \"@type\")) {\n          context.logger.error('Missing \"@type\" field in configuration: ', test)\n        }\n      })\n    }\n\n    const test_page_load_dependencies_config = (maybe_page_load_dependencies_array) => {\n      if (maybe_page_load_dependencies_array && !Array.isArray(maybe_page_load_dependencies_array)) {\n        context.logger.error(\"config.page_load_dependencies is an invalid configuration\")\n        return\n      }\n      const errors = maybe_page_load_dependencies_array\n        .map((i) => {\n          return _lib_utils__WEBPACK_IMPORTED_MODULE_2__[\"default\"].is_valid_dependecies_item(i)\n        })\n        .filter((i) => i)\n      if (errors.length > 0) {\n        context.logger.error(\"config.page_load_dependencies has errors: \", errors)\n      }\n    }\n\n    return function () {\n      test_component_types_config(context.config?.component_types)\n      test_page_load_dependencies_config(context.config?.page_load_dependencies)\n    }\n  }\n\n  function handle_event(context) {\n    let done\n    return function (event) {\n      const push_page_data = () => {\n        context.acdl.remove_event_listener(\"adobeDataLayer:event\", done)\n        setTimeout(() => {\n          context.logger.success(`Page resolved. Pushing \"${context.config.page_load_event}\" event to the dataLayer`)\n          context.acdl.push({\n            event: `${context.event_prefix}:${context.config.page_load_event}`,\n            eventInfo: { path: context.shared.page_component },\n          })\n        }, 0)\n      }\n\n      const apply_test = (0,_lib_get_component_data__WEBPACK_IMPORTED_MODULE_0__[\"default\"])(event, window.adobeDataLayer.getState)\n\n      const testable_types = context.config.component_types\n      const data = testable_types.reduce((acc, test) => {\n        if (acc) return acc\n        return !!apply_test(test)\n      }, false)\n\n      if (data) {\n        context.shared.page_component = (0,_lib_page_builder__WEBPACK_IMPORTED_MODULE_1__[\"default\"])(event, context)\n        if (context.config.page_load_dependencies.length > 0) {\n          done = _lib_utils__WEBPACK_IMPORTED_MODULE_2__[\"default\"].fulfiller(context.logger, context.config.page_load_dependencies, push_page_data)\n          done = done(context.acdl.get_state(context.shared.page_component))\n          context.acdl.add_event_listener(\"adobeDataLayer:event\", done, { scope: \"all\" })\n        } else {\n          push_page_data()\n        }\n      } else {\n        context.logger.error(\"Cannot resolve page. Pagetype is unmatched. Please check or update your configuration!\")\n      }\n    }\n  }\n\n  function provider(context) {\n    return Object.freeze({\n      get(property_name) {\n        const page = context.acdl.get_state(context.shared.page_component)\n        return _lib_utils__WEBPACK_IMPORTED_MODULE_2__[\"default\"].get_page_data(page, property_name)\n      },\n    })\n  }\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/index.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/campaign_parameter_to_cid.js":
+/*!***********************************************************!*\
+  !*** ./src/plugins/page/lib/campaign_parameter_to_cid.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ campaign_parameter_to_cid)\n/* harmony export */ });\nfunction campaign_parameter_to_cid(cid_mapping, documentLocationSearch) {\n  function filter_remove_empty(item) {\n    return item !== \"\"\n  }\n\n  function reduce_to_utm(acc, item) {\n    const tuple = item.split(\"=\")\n    if (Object.prototype.hasOwnProperty.call(acc, tuple[0])) {\n      acc[tuple[0]] = tuple[1]\n    }\n    return acc\n  }\n\n  function map_extract_values(obj) {\n    return function (item) {\n      return obj[item]\n    }\n  }\n\n  const query_array = documentLocationSearch.replace(\"?\", \"\").split(\"&\")\n  const utm_object = query_array\n    ? query_array.filter(filter_remove_empty).reduce(reduce_to_utm, cid_mapping)\n    : undefined\n  const cid = utm_object\n    ? Object.keys(utm_object).map(map_extract_values(utm_object)).join(\":\").replace(/^:+$/, \"\")\n    : \"\"\n\n  return cid\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/campaign_parameter_to_cid.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/get_component_data.js":
+/*!****************************************************!*\
+  !*** ./src/plugins/page/lib/get_component_data.js ***!
+  \****************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ get_component_data)\n/* harmony export */ });\n/* harmony import */ var _test_dataLayer_object__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./test_dataLayer_object */ \"./src/plugins/page/lib/test_dataLayer_object.js\");\n\n\nfunction get_component_data(e, resolver) {\n  if (!e) return undefined\n  if (\n    Object.prototype.hasOwnProperty.call(e, \"eventInfo\") &&\n    Object.prototype.hasOwnProperty.call(e.eventInfo, \"path\")\n  ) {\n    const dataLayerObject = resolver(e.eventInfo.path)\n    return dataLayerObject !== undefined\n      ? function (test, property) {\n          const fsProperty = typeof test === \"string\" && !property ? test : property\n          const fsTest = typeof test === \"object\" ? test : undefined\n          return (0,_test_dataLayer_object__WEBPACK_IMPORTED_MODULE_0__[\"default\"])(dataLayerObject, fsTest, { one_of: true })\n            ? fsProperty\n              ? enrich_with_own_properties(dataLayerObject, e.eventInfo.path)[fsProperty]\n              : enrich_with_own_properties(dataLayerObject, e.eventInfo.path)\n            : undefined\n        }\n      : function (_filter, _property) {\n          return undefined\n        }\n  }\n  return function (_filter, _property) {\n    return undefined\n  }\n}\n\nfunction enrich_with_own_properties(dataLayerObject, path) {\n  dataLayerObject[\"dlh:ownPath\"] = path\n  dataLayerObject[\"dlh:ownId\"] = path.split(\".\")[path.split(\".\").length - 1]\n  dataLayerObject[\"dlh:parentComponent\"] = dataLayerObject[\"parentId\"]\n    ? beautify_parent(dataLayerObject[\"parentId\"])\n    : undefined\n  return dataLayerObject\n}\n\nfunction beautify_parent(parentId) {\n  return parentId.includes(\"-\") ? parentId.split(\"-\")[0] : parentId\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/get_component_data.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/page_builder.js":
+/*!**********************************************!*\
+  !*** ./src/plugins/page/lib/page_builder.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ page_builder)\n/* harmony export */ });\n/* harmony import */ var _update_path__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./update_path */ \"./src/plugins/page/lib/update_path.js\");\n/* harmony import */ var _repo_path_to_pageId__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./repo_path_to_pageId */ \"./src/plugins/page/lib/repo_path_to_pageId.js\");\n/* harmony import */ var _repo_path_to_tenant__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./repo_path_to_tenant */ \"./src/plugins/page/lib/repo_path_to_tenant.js\");\n/* harmony import */ var _repo_path_to_pagename__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./repo_path_to_pagename */ \"./src/plugins/page/lib/repo_path_to_pagename.js\");\n/* harmony import */ var _template_path_to_pagetype__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./template_path_to_pagetype */ \"./src/plugins/page/lib/template_path_to_pagetype.js\");\n/* harmony import */ var _campaign_parameter_to_cid__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./campaign_parameter_to_cid */ \"./src/plugins/page/lib/campaign_parameter_to_cid.js\");\n\n\n\n\n\n\n\nfunction page_builder(event, context) {\n  const path = event?.message?.eventInfo?.path || event?.eventInfo?.path\n\n  context.acdl.push(function (dl) {\n    const pn = pname(context.config.prefix)\n    const page = dl.getState(path)\n    const tags = page[\"xdm:tags\"]\n    const joined_tags = tags !== null && Array.isArray(tags) && tags.length > 0 ? tags.join(\";\") : \"\"\n    const update_object = (0,_update_path__WEBPACK_IMPORTED_MODULE_0__[\"default\"])(path, {\n      [pn(\"pageId\")]: (0,_repo_path_to_pageId__WEBPACK_IMPORTED_MODULE_1__[\"default\"])(page[\"repo:path\"]),\n      [pn(\"tenant\")]: (0,_repo_path_to_tenant__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(page[\"repo:path\"]),\n      [pn(\"pagename\")]: (0,_repo_path_to_pagename__WEBPACK_IMPORTED_MODULE_3__[\"default\"])(page[\"repo:path\"]),\n      [pn(\"pagetype\")]: (0,_template_path_to_pagetype__WEBPACK_IMPORTED_MODULE_4__[\"default\"])(page[\"xdm:template\"]),\n      [pn(\"cid\")]: (0,_campaign_parameter_to_cid__WEBPACK_IMPORTED_MODULE_5__[\"default\"])(context.config.cid_mapping, document.location.search),\n      [pn(\"pagetags\")]: joined_tags,\n      [pn(\"ownPath\")]: path,\n      [pn(\"ownId\")]: path.split(\".\")[path.split(\".\").length - 1],\n    })\n\n    context.acdl.push(update_object)\n  })\n\n  return path\n}\n\nfunction pname(prefix) {\n  return function (field) {\n    return `${prefix}:${field}`\n  }\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/page_builder.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/repo_path_to_pageId.js":
+/*!*****************************************************!*\
+  !*** ./src/plugins/page/lib/repo_path_to_pageId.js ***!
+  \*****************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ repo_path_to_pageId)\n/* harmony export */ });\nfunction repo_path_to_pageId(repoPath) {\n  const repoArr = repoPath\n    ? repoPath\n        .split(\"/\")\n        .filter(function (item) {\n          return item !== \"\"\n        })\n        .map(function (item) {\n          return item.replace(\".html\", \"\")\n        })\n        .reduce(function (acc, item, index) {\n          if (index > 1) acc.push(item)\n          return acc\n        }, [])\n    : undefined\n  return repoArr ? repoArr.join(\" : \") : \"Cannot resolve pageId!\"\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/repo_path_to_pageId.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/repo_path_to_pagename.js":
+/*!*******************************************************!*\
+  !*** ./src/plugins/page/lib/repo_path_to_pagename.js ***!
+  \*******************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ repo_path_to_pagename)\n/* harmony export */ });\nfunction repo_path_to_pagename(repoPath) {\n  return repoPath\n    ? repoPath\n        .split(\"/\")\n        .filter(function (item) {\n          return item !== \"\"\n        })\n        .map(function (item) {\n          return item.replace(\".html\", \"\")\n        })\n        .reduce(function (acc, item, index, arr) {\n          return index === arr.length - 1 ? acc + item : acc\n        }, \"\")\n    : undefined\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/repo_path_to_pagename.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/repo_path_to_tenant.js":
+/*!*****************************************************!*\
+  !*** ./src/plugins/page/lib/repo_path_to_tenant.js ***!
+  \*****************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ repo_path_to_tenant)\n/* harmony export */ });\nfunction repo_path_to_tenant(repoPath) {\n  const repoArr = repoPath\n    ? repoPath\n        .split(\"/\")\n        .filter(function (item) {\n          return item !== \"\"\n        })\n        .map(function (item) {\n          return item.replace(\".html\", \"\")\n        })\n        .reduce(function (acc, item, index) {\n          if (index === 1) {\n            const itemArr = item.split(\"-\")\n            const tenantName = itemArr\n              .map(function (item) {\n                return `${item.charAt(0).toUpperCase()}${item.slice(1)}`\n              })\n              .filter(function (item) {\n                return item\n              })\n              .join(\" \")\n            acc.push(tenantName)\n          }\n          return acc\n        }, [])\n    : undefined\n  return repoArr ? repoArr.join(\" : \") : \"Cannot resolve tenant!\"\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/repo_path_to_tenant.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/template_path_to_pagetype.js":
+/*!***********************************************************!*\
+  !*** ./src/plugins/page/lib/template_path_to_pagetype.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ template_path_to_pagetype)\n/* harmony export */ });\nfunction template_path_to_pagetype(templatePath) {\n  return templatePath\n    ? templatePath\n        .split(\"/\")\n        .filter(function (item) {\n          return item !== \"\"\n        })\n        .map(function (item) {\n          return `${item.charAt(0).toUpperCase()}${item.slice(1)}`\n        })\n        .reduce(function (acc, item, index, arr) {\n          return index === arr.length - 1 ? acc + item : acc\n        }, \"\")\n    : undefined\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/template_path_to_pagetype.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/test_dataLayer_object.js":
+/*!*******************************************************!*\
+  !*** ./src/plugins/page/lib/test_dataLayer_object.js ***!
+  \*******************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ test_dataLayer_object)\n/* harmony export */ });\nfunction test_dataLayer_object(obj, test, option) {\n  const fsTest = test || {}\n  const allHaveToSucceed = !(option && option.one_of === true)\n  const testResultArray = Object.keys(fsTest)\n    .map(function (testProp) {\n      if (typeof obj[testProp] === \"string\") {\n        const match = obj[testProp].match(wildcardToRegExp(fsTest[testProp]))\n        return Boolean(match)\n      }\n      return Boolean(Object.prototype.hasOwnProperty.call(obj, testProp) && fsTest[testProp] === obj[testProp])\n    })\n    .filter(function (item) {\n      return item\n    })\n  return Object.keys(fsTest).length === 0\n    ? Boolean(obj)\n    : allHaveToSucceed\n    ? Object.keys(fsTest).length === testResultArray.length\n    : testResultArray.length > 0\n}\n\nfunction regexEscape(s) {\n  return s.replace(/[|\\\\{}()[\\]^$+*?.]/g, \"\\\\$&\")\n}\n\nfunction wildcardToRegExp(s) {\n  return new RegExp(\"^\" + s.split(/\\*+/).map(regexEscape).join(\".*\") + \"$\")\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/test_dataLayer_object.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/update_path.js":
+/*!*********************************************!*\
+  !*** ./src/plugins/page/lib/update_path.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ update_path)\n/* harmony export */ });\nfunction update_path(path, data) {\n  const obj = {}\n  path.split(\".\").reduce(function (acc, item, index, arr) {\n    if (index === arr.length - 1) return (acc[item] = data)\n    return (acc[item] = {})\n  }, obj)\n  return obj\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/update_path.js?");
+
+/***/ }),
+
+/***/ "./src/plugins/page/lib/utils.js":
+/*!***************************************!*\
+  !*** ./src/plugins/page/lib/utils.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (__WEBPACK_DEFAULT_EXPORT__)\n/* harmony export */ });\n/* harmony import */ var _test_dataLayer_object__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./test_dataLayer_object */ \"./src/plugins/page/lib/test_dataLayer_object.js\");\n\n\n/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Object.freeze({\n  get_page_data,\n  fulfiller,\n  is_valid_dependecies_item,\n}));\n\nfunction get_page_data(page, property_name) {\n  return page && property_name ? page[property_name] : page && !property_name ? page : undefined\n}\n\nfunction fulfiller(logger, dependencies, callback) {\n  if (!Array.isArray(dependencies)) {\n    return\n  }\n\n  let resolved = false\n  const relevant_dependencies = []\n  const last_resort = (_e) => callback()\n  window.addEventListener(\"beforeunload\", last_resort)\n  return function (page) {\n    return function (event) {\n      if (!resolved) {\n        dependencies = dependencies.filter((dependency) => {\n          // the case if the dependency is just a string event name\n          if (dependency === event.event) {\n            relevant_dependencies.push(dependency)\n            return false\n          }\n          // there is a dependency but its not relevant at all for this page\n          if (_is_object(dependency) && !(0,_test_dataLayer_object__WEBPACK_IMPORTED_MODULE_0__[\"default\"])(page, dependency.cond)) {\n            return false\n          }\n          // the case if the dependency is a testable object\n          // optinally we could test for test_dataLayer_object(page, dependency.cond, { one_of: true })\n          if (\n            _is_object(dependency) &&\n            dependency.event === event.event &&\n            (0,_test_dataLayer_object__WEBPACK_IMPORTED_MODULE_0__[\"default\"])(page, dependency.cond)\n          ) {\n            relevant_dependencies.push(dependency)\n            return false\n          }\n          return true\n        })\n        if (dependencies.length === 0) {\n          window.removeEventListener(\"beforeunload\", last_resort)\n          logger.success(\"Resolved page dependencies\", relevant_dependencies)\n          resolved = true\n          callback()\n        }\n      }\n    }\n  }\n}\n\nfunction is_valid_dependecies_item(maybe_valid) {\n  if (_is_string(maybe_valid)) {\n    return null\n  }\n  if (!_is_object(maybe_valid)) {\n    return `Invalid dependency item: Not an object!`\n  }\n  if (!Object.hasOwn(maybe_valid, \"event\")) {\n    return `Invalid dependency item: Missing 'event' property`\n  }\n  if (!Object.hasOwn(maybe_valid, \"cond\")) {\n    return `Invalid dependency item: Missing 'cond' property`\n  }\n  return null\n}\n\nfunction _is_string(maybe_string) {\n  return typeof maybe_string === \"string\"\n}\n\nfunction _is_object(maybe_object) {\n  return typeof maybe_object === \"object\" && maybe_object !== null\n}\n\n\n//# sourceURL=webpack://acdl_helper/./src/plugins/page/lib/utils.js?");
+
+/***/ })
+
+}]);

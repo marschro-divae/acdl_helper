@@ -1,6 +1,6 @@
 {
   "name": "acdl_helper",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Helper Library for the Adobe Client Data Layer",
   "private": true,
   "type": "module",
@@ -22,10 +22,10 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "aem-clientlib-generator": "^1.8.0",
+    "aem-clientlib-generator": "^1.4.1",
     "dotenv": "^16.0.3",
     "ejs": "^3.1.8",
-    "eslint": "^8.28.0",
+    "eslint": "^9.39.2",
     "eslint-config-prettier": "^8.5.0",
     "express": "^4.18.2",
     "filemanager-webpack-plugin": "^8.0.0",

@@ -23,6 +23,22 @@
           path: "page.content\u002D2b9114832d",
         },
       })
+
+      const cmp = {
+        "fluff-0815": {
+          "@type": "freeze/core/components/fluff",
+          "dc:title": "Fluffy",
+        },
+      }
+
+      window.adobeDataLayer = window.adobeDataLayer || []
+      adobeDataLayer.push({
+        component: JSON.parse(JSON.stringify(cmp)),
+        event: "cmp:test_reference",
+        eventInfo: {
+          reference: "component.fluff\u002D0815",
+        },
+      })
     </script>
     <div id="page">
       <div id="header">
