@@ -25,7 +25,7 @@ export function apply_xdm_pairs(xdm, pairs, cmp, logger) {
   for (var i = 0; i < pairs.length; i++) {
     var pair = pairs[i]
     if (!Array.isArray(pair) || pair.length < 2) {
-      logger.warn("bad xdm pair:", pair)
+      logger.warning("bad xdm pair:", pair)
       continue
     }
     set_deep_path(xdm, pair[0], resolve(pair[1], cmp, logger))

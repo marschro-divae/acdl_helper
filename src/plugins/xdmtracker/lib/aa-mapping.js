@@ -56,7 +56,7 @@ export function coerce_events_into_xdm(xdm, events, cmp, logger) {
         path = event_path_for(name)
 
       if (!path) {
-        logger.warn("unknown event:", e)
+        logger.warning("unknown event:", e)
         continue
       }
       set_event(path, raw != null ? raw : 1)
@@ -69,7 +69,7 @@ export function coerce_events_into_xdm(xdm, events, cmp, logger) {
         if (!Object.prototype.hasOwnProperty.call(e, k)) continue
         var p = event_path_for(k)
         if (!p) {
-          logger.warn("unknown event:", k)
+          logger.warning("unknown event:", k)
           continue
         }
         var v = resolve(e[k], cmp, logger)
@@ -78,7 +78,7 @@ export function coerce_events_into_xdm(xdm, events, cmp, logger) {
       continue
     }
 
-    logger.warn("unsupported event descriptor:", e)
+    logger.warning("unsupported event descriptor:", e)
   }
 }
 
@@ -91,7 +91,7 @@ export function coerce_kv_array_into_xdm(xdm, arr, base_path, cmp, logger) {
   for (var i = 0; i < arr.length; i++) {
     var item = resolve(arr[i], cmp, logger)
     if (!is_obj(item)) {
-      logger.warn("bad kv item:", item)
+      logger.warning("bad kv item:", item)
       continue
     }
     for (var k in item) {

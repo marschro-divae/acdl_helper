@@ -66,7 +66,7 @@ export default function xdmtracker() {
           return
         }
         if (_defined) {
-          context.logger.warn("xdmtracker already defined — overwriting previous definition")
+          context.logger.warning("xdmtracker already defined — overwriting previous definition")
         }
         _definition = config.events
         _defaults = config.defaults || null

@@ -30,7 +30,7 @@ export function build_payload(event_key, def, cmp, send_opts, defaults, logger) 
 
     var interaction_type = def.webInteractionType || "other"
     if (VALID_INTERACTION_TYPES.indexOf(interaction_type) < 0) {
-      logger.warn(
+      logger.warning(
         'invalid webInteractionType "' + interaction_type +
         '", must be one of: ' + VALID_INTERACTION_TYPES.join(", ") +
         '. Falling back to "other"'
@@ -54,7 +54,7 @@ export function build_payload(event_key, def, cmp, send_opts, defaults, logger) 
 
   var resolved_event_type = def.eventType || default_event_type
   if (def.pageView === true && resolved_event_type !== "web.webpagedetails.pageViews") {
-    logger.warn(
+    logger.warning(
       'pageView is true but eventType is "' + resolved_event_type +
       '" — expected "web.webpagedetails.pageViews". Payload will be sent as configured.'
     )

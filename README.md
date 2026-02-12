@@ -7,7 +7,8 @@
 5. [CRX-Package Releases](#05---crx-package-releases)
 6. [Development Setup](#06---development-setup)
 7. [Usage and Core API](#07---usage-and-core-api)
-8. [Plugins](#08---plugins)
+8. [Debug Mode](#08---debug-mode)
+9. [Plugins](#09---plugins)
 
 ## 01 - PURPOSE
 
@@ -92,12 +93,6 @@ Latest version to be found here: [crx-package releases](/crx-package/)
   npm run build:prod
   ```
 
-- Build clientlibs, ready to add to an AEM projects clientlib folder => `jcr_root` folder
-
-  ```
-  npm run build:clientlibs
-  ```
-
 - Build CRX content package to be installed via crx-package manager => [`crx-package` releases folder](/crx-package/)
   ```
   npm run build:crxbundle
@@ -163,9 +158,8 @@ You basically should create two rules:
    - CONDITION: none
    - ACTION: Custom Code
      ```javascript
-     // Example config object iwth optional config for 'page-plugin'
+     // Example config object with optional config for 'page-plugin'
      const config = {
-       env: "development",
        event_prefix: "acdl_helper",
        dependencies: ["launch:loaded"],
        plugins: {
@@ -181,11 +175,6 @@ You basically should create two rules:
 See also: [Example Adobe Data Collection Property](https://experience.adobe.com/#/@provisionemeaptrsd/data-collection/tags/companies/COf862d022704d4b11a91f844bd6b34b65/properties/PRcf885ce23978419abc8a3730d71e5eed/overview)
 
 **Config options**
-
-- `env`
-
-  - default: **"development"**
-  - description: if set to development, you get a bunch of log messages
 
 - `event_prefix`
 
@@ -223,7 +212,25 @@ This leverages the complexity to figure out the _pathInfo_ from the event and ge
 
 **⚠️ BEWARE** - All this only makes sense, if you catch _dataLayer-events_. Other events like native click events have nothing to do with _dataLayer-events_ and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native or custom events.
 
-## 08 - PLUGINS
+## 08 - DEBUG MODE
+
+---
+
+By default, the library runs silently. To enable debug logging (all internal messages from core and plugins), use:
+
+```javascript
+acdl_helper.setDebug(true)
+```
+
+To disable:
+
+```javascript
+acdl_helper.setDebug(false)
+```
+
+The setting is persisted to `localStorage` (key: `acdl_helper_debug`) and survives page reloads. Calling `setDebug()` takes effect immediately for all loggers — no reload needed for the current page.
+
+## 09 - PLUGINS
 
 Project specific behaviour should be provided as custom plugin.
 Feel free, to contribute to this repo with you custom plugin :)

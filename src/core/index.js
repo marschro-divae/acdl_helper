@@ -11,7 +11,7 @@ import plug from "./lib/plugin_utils"
     const EVENTS = events(custom_config?.event_prefix || default_config.event_prefix)
 
     let app = {
-      logger: utils.logger(custom_config?.env || "development")(STATICS.LOG_PREFIX),
+      logger: utils.logger(STATICS.LOG_PREFIX),
       EVENTS,
       config: utils.merge_configs(default_config, custom_config),
     }

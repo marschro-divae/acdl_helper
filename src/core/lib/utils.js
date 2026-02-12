@@ -1,11 +1,14 @@
 import * as STATICS from "./statics"
 
+let _debug = typeof localStorage !== "undefined" && localStorage.getItem("acdl_helper_debug") === "true"
+
 const acdl = gen_acdl()
 
 export default Object.freeze({
   is_object,
   resolve_initial_dependencies,
   logger,
+  set_debug,
   is_function,
   update_object,
   message,
@@ -30,15 +33,20 @@ function message(message, prefix = STATICS.LOG_PREFIX) {
   }
 }
 
-function logger(environment = "development") {
-  const allow = environment === "development"
-  return function (prefix = "[acdl_helper]") {
-    return {
-      info: (msg, ...args) => allow && console.log(message(msg, prefix).as_info, "", ...args),
-      success: (msg, ...args) => allow && console.log(message(msg, prefix).as_success, "color: green", ...args),
-      warning: (msg, ...args) => allow && console.log(message(msg, prefix).as_warning, "color: orange", ...args),
-      error: (msg, ...args) => allow && console.log(message(msg, prefix).as_error, "color: red", ...args),
-    }
+function set_debug(flag) {
+  _debug = !!flag
+  try {
+    if (_debug) localStorage.setItem("acdl_helper_debug", "true")
+    else localStorage.removeItem("acdl_helper_debug")
+  } catch (_e) { /* private browsing / disabled storage */ }
+}
+
+function logger(prefix = "[acdl_helper]") {
+  return {
+    info: (msg, ...args) => _debug && console.log(message(msg, prefix).as_info, "", ...args),
+    success: (msg, ...args) => _debug && console.log(message(msg, prefix).as_success, "color: green", ...args),
+    warning: (msg, ...args) => _debug && console.log(message(msg, prefix).as_warning, "color: orange", ...args),
+    error: (msg, ...args) => _debug && console.log(message(msg, prefix).as_error, "color: red", ...args),
   }
 }
 

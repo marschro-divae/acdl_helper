@@ -72,7 +72,7 @@ async function load_plugins(app) {
  * - and a shared object space, to be used by plugins and to make it available to the greater context
  *
  */
-function init_plugins(plugins, env, event_prefix, catcher) {
+function init_plugins(plugins, event_prefix, catcher) {
   Object.keys(plugins).forEach((plugin_key) => {
     // 1. Check if the plugin correctly provides the impl() function
     if (!utils.is_function(plugins[plugin_key].impl)) {
@@ -81,7 +81,7 @@ function init_plugins(plugins, env, event_prefix, catcher) {
 
     // 2. Create a context for the plugin
     const context = Object.freeze({
-      logger: utils.logger(env)(`[${STATICS.LOG_PLUGIN_PREFIX}: ${plugin_key}]`),
+      logger: utils.logger(`[${STATICS.LOG_PLUGIN_PREFIX}: ${plugin_key}]`),
       config: plugins[plugin_key].config,
       event_prefix: `${event_prefix}:${plugin_key}`,
       acdl: utils.acdl,
