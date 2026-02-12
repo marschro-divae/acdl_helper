@@ -1,5 +1,14 @@
 # Adobe Client Data Layer Helper Library (acdl_helper)
 
+1. [Purpose](#01---purpose)
+2. [Architecture](#02---architecture)
+3. [Code Conventions](#03---code-conventions)
+4. [Changelog](#04---changelog)
+5. [CRX-Package Releases](#05---crx-package-releases)
+6. [Development Setup](#06---development-setup)
+7. [Usage and Core API](#07---usage-and-core-api)
+8. [Plugins](#08---plugins)
+
 ## 01 - PURPOSE
 
 ---
@@ -20,13 +29,26 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
 - Every additional or project specific implementation has to be implemented via plugins.
 - The library is **not** persistent over several server-roundtrips and as such does not solve problems in single-page applications.
 
-## 03 - CRX-Package Releases
+## 03 - CODE CONVENTIONS
+
+---
+
+- **snake_case** for variables and function names (e.g. `load_plugins`, `is_object`, `event_prefix`)
+- camelCase only where required by external APIs (e.g. `adobeDataLayer`, `getState`)
+
+## 04 - CHANGELOG
+
+---
+
+See [CHANGELOG.md](/CHANGELOG.md) for release notes and version history.
+
+## 05 - CRX-PACKAGE RELEASES
 
 ---
 
 Latest version to be found here: [crx-package releases](/crx-package/)
 
-## 03 - DEVELOPMENT SETUP
+## 06 - DEVELOPMENT SETUP
 
 ---
 
@@ -101,7 +123,7 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 
 Coming soon... ;-)
 
-## 04 - Usage and Core API
+## 07 - Usage and Core API
 
 ---
 
@@ -201,7 +223,7 @@ This leverages the complexity to figure out the _pathInfo_ from the event and ge
 
 **⚠️ BEWARE** - All this only makes sense, if you catch _dataLayer-events_. Other events like native click events have nothing to do with _dataLayer-events_ and are not further processed by the `acdl_helper`. In development mode, you get a warning in the console, when you accidentally catch and try to process native or custom events.
 
-## 05 - PLUGINS
+## 08 - PLUGINS
 
 Project specific behaviour should be provided as custom plugin.
 Feel free, to contribute to this repo with you custom plugin :)
@@ -223,3 +245,4 @@ Provided standard plugins are:
 - [page](/src/plugins/page/README.md)
 - [user](/src/plugins/user/README.md)
 - [usercentrics](/src/plugins/usercentrics/README.md)
+- [xdmtracker](/src/plugins/xdmtracker/README.md)

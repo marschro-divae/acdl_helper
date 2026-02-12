@@ -72,7 +72,7 @@ async function load_plugins(app) {
  * - and a shared object space, to be used by plugins and to make it available to the greater context
  *
  */
-function init_plugins(plugins, env, event_prefix) {
+function init_plugins(plugins, env, event_prefix, catcher) {
   Object.keys(plugins).forEach((plugin_key) => {
     // 1. Check if the plugin correctly provides the impl() function
     if (!utils.is_function(plugins[plugin_key].impl)) {
@@ -85,6 +85,7 @@ function init_plugins(plugins, env, event_prefix) {
       config: plugins[plugin_key].config,
       event_prefix: `${event_prefix}:${plugin_key}`,
       acdl: utils.acdl,
+      catch: catcher,
       shared: {},
     })
 
