@@ -42,28 +42,28 @@ acdl_helper.xdmtracker.define({
     ],
   },
   events: {                                        // required — map of ACDL event names to tracking descriptors
-    "operating-manual:init": {
+    "my-app:page-load": {
       pageView: true,                              // → eventType defaults to "web.webpagedetails.pageViews"
-      events: ["event50"],
+      events: ["event1"],
       eVars: [
-        { eVar11: "operating-manual:init" },
-        { eVar20: (cmp) => cmp.fin },
+        { eVar11: "my-app:page-load" },
+        { eVar20: (cmp) => cmp["dc:title"] },
       ],
     },
-    "operating-manual:fin-search:error": {
+    "my-app:search:error": {
       // pageView omitted → link click            // → eventType defaults to "web.webInteraction.linkClicks"
-      events: ["event51"],
+      events: ["event2"],
       eVars: [
-        { eVar11: "operating-manual:vin-search:error" },
-        { eVar20: (cmp) => cmp.fin },
+        { eVar11: "my-app:search:error" },
+        { eVar20: (cmp) => cmp.searchTerm },
       ],
     },
-    "operating-manual:fin-search:success": {
+    "my-app:order:complete": {
       eventType: "commerce.purchases",             // → explicit eventType, no pageView → link click semantics
-      events: ["event52"],
+      events: ["event3"],
       eVars: [
-        { eVar11: "operating-manual:vin-search:success" },
-        { eVar20: (cmp) => cmp.fin },
+        { eVar11: "my-app:order:complete" },
+        { eVar20: (cmp) => cmp.orderId },
       ],
     },
   },
@@ -271,6 +271,8 @@ const definition = {
   },
 }
 ```
+
+> **Merchandising eVars:** Product-level eVars (merchandising) are set inside `productListItems` entries via `_experience.analytics.customDimensions.eVars`. See [eVar (merchandising) implementation](https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/evar-merchandising) for details. The `xdm` field supports this out of the box — no special handling required.
 
 **Pairs form** — flat path/value tuples, useful for deeply nested or indexed paths:
 
