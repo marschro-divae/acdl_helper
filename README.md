@@ -28,7 +28,6 @@ As the ACDL itself does not handle dependencies and integrations for us, every p
 - This Library is independant and has to be brought to the project as simple clientlib, which is integrated via the base page template of the project (i.e. customfooterlibs.html).
 - The library provides core functionalities and some basic plugins.
 - Every additional or project specific implementation has to be implemented via plugins.
-- The library is **not** persistent over several server-roundtrips and as such does not solve problems in single-page applications.
 
 ## 03 - CODE CONVENTIONS
 

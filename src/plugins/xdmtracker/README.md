@@ -165,11 +165,25 @@ Where each field lands in the `alloy("sendEvent", payload)` call:
 | `events`   | Array   | — | AA events: `"event48"`, `"event48=22"`, `{ event48: 3 }`, or `(cmp) => ...` |
 | `eVars`    | Array   | — | `[{ eVar4: "static" }, { eVar5: (cmp) => cmp.x }]` |
 | `props`    | Array   | — | Same format as eVars |
-| `lists`    | Array   | — | Same format as eVars |
+| `lists`    | Array   | — | XDM list format: `[{ list1: { list: [{ value: "a" }, { value: "b" }] } }]` (see below) |
 | `xdm`      | Object or Array | — | Object for deep merge, or pairs `[["path", value], ...]` |
 | `xdmPairs` | Array   | — | Additional `[["path", value], ...]` pairs merged after `xdm` |
 
 All values can be static or resolver functions `(cmp) => value`.
+
+> **List variables** use a nested XDM structure unlike eVars/props. Each list value must be wrapped as `{ value: "..." }` inside a `list` array. Delimiters are not needed — Adobe applies the delimiter configured in the report suite automatically. See [list variable implementation](https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/list) for details.
+>
+> ```javascript
+> // Static values
+> lists: [
+>   { list1: { list: [{ value: "red" }, { value: "blue" }, { value: "green" }] } },
+> ]
+>
+> // Dynamic from component state
+> lists: [
+>   { list1: (cmp) => ({ list: cmp.tags.map((t) => ({ value: t })) }) },
+> ]
+> ```
 
 ### Send options
 

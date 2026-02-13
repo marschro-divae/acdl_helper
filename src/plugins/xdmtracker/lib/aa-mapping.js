@@ -48,6 +48,9 @@ export function coerce_events_into_xdm(xdm, events, cmp, logger) {
   for (var i = 0; i < events.length; i++) {
     var e = resolve(events[i], cmp, logger)
 
+    // null/undefined → resolver opted out (conditional tracking), skip silently
+    if (e == null) continue
+
     // String form: "event48" or "event48=22" (counter with explicit value)
     if (typeof e === "string") {
       var idx = e.indexOf("="),
@@ -90,6 +93,10 @@ export function coerce_kv_array_into_xdm(xdm, arr, base_path, cmp, logger) {
   if (!Array.isArray(arr)) return
   for (var i = 0; i < arr.length; i++) {
     var item = resolve(arr[i], cmp, logger)
+
+    // null/undefined → resolver opted out (conditional tracking), skip silently
+    if (item == null) continue
+
     if (!is_obj(item)) {
       logger.warning("bad kv item:", item)
       continue
@@ -97,8 +104,12 @@ export function coerce_kv_array_into_xdm(xdm, arr, base_path, cmp, logger) {
     for (var k in item) {
       if (!Object.prototype.hasOwnProperty.call(item, k)) continue
       var v = resolve(item[k], cmp, logger)
+
+      // null/undefined value → skip this variable (conditional resolver opted out)
+      if (v == null) continue
+
       // AA eVars and props must be strings; lists can hold non-string values (e.g. delimited arrays)
-      if (v != null && (base_path.indexOf(".eVars") > 0 || base_path.indexOf(".props") > 0)) {
+      if (base_path.indexOf(".eVars") > 0 || base_path.indexOf(".props") > 0) {
         v = String(v)
       }
       set_deep_path(xdm, base_path + "." + k, v)
