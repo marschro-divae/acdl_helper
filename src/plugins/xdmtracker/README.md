@@ -272,7 +272,9 @@ const definition = {
 }
 ```
 
-> **Merchandising eVars:** Product-level eVars (merchandising) are set inside `productListItems` entries via `_experience.analytics.customDimensions.eVars`. See [eVar (merchandising) implementation](https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/evar-merchandising) for details. The `xdm` field supports this out of the box — no special handling required.
+> **Merchandising eVars:** Product-level eVars (merchandising) are set inside `productListItems` entries via `_experience.analytics.customDimensions.eVars`. Per-product events go into `productListItems[]._experience.analytics.event1to100`. See [eVar (merchandising) implementation](https://experienceleague.adobe.com/en/docs/analytics/implementation/vars/page-vars/evar-merchandising) for details. The `xdm` field supports this out of the box — no special handling required.
+>
+> **Heads up:** If you set the same event both via the `events` array (top-level) and inside `productListItems` (per-product), the top-level value takes precedence. Avoid duplicating events across both levels.
 
 **Pairs form** — flat path/value tuples, useful for deeply nested or indexed paths:
 
