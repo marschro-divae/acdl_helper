@@ -14,6 +14,11 @@
 - Node ≥ 23 (see `.nvmrc`). Build needs Java 11 + Maven only for the CRX bundle.
 - Build artifacts that ARE committed: `release/{version}/` (served via jsDelivr CDN) and `crx-package/{version}.zip` (AEM content package). Only `dist/` is gitignored.
 
+## Adobe documentation — verify, don't trust
+Adobe's docs (Experience League) are frequently **outdated, incomplete, or simply wrong**. Do not treat any documented behavior as fact for implementation — **hand-test and confirm the actual behavior** before relying on it (browser network payloads, the Adobe Experience Platform Assurance "Adobe Analytics" view, the real recorded hit, etc.). Budget time for reverse-engineering; the docs are a starting hypothesis, not ground truth.
+
+Concrete example (this repo, v1.7.0): the docs state that a `decisioning.propositionFetch` event is automatically dropped by Adobe Analytics. In practice it still produced a page-view hit, so `fetchOnly` had to disable Analytics explicitly via `edgeConfigOverrides.com_adobe_analytics.enabled = false`. What actually governs page-view-vs-link is `web.webPageDetails` vs `web.webInteraction` — **not** `eventType`, despite what some docs imply. When docs and observed behavior disagree, **observed behavior wins** — encode it, and leave a comment citing what was tested.
+
 ## Code conventions
 - **snake_case** for all variables and functions (e.g. `build_payload`, `is_obj`). camelCase only where an external API requires it (e.g. `adobeDataLayer`, `renderDecisions`, `webInteraction`).
 - Match the surrounding file's style and comment density.
