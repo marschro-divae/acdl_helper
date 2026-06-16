@@ -115,7 +115,12 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 
 ### 5. Test
 
-Coming soon... ;-)
+Unit tests run on Node's built-in test runner (no extra dependencies). Tests live in `tests/`.
+
+```
+npm test          # run once
+npm run test:watch  # re-run on change
+```
 
 ## 07 - Usage and Core API
 

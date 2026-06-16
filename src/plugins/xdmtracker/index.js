@@ -11,6 +11,19 @@
  */
 import { build_payload } from "./lib/payload.js"
 
+// Default time (ms) a page view waits for a prior personalization render to settle
+// before sending anyway. Guarantees tracking can never hang on a render that
+// stalls or never resolves (overridable per event via def.gateTimeout).
+const GATE_TIMEOUT_MS = 2000
+
+/** A promise that resolves after `ms` — the render-gate safety timeout. */
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/** No-op, used to normalize the render promise to a never-rejecting settle signal. */
+function noop() {}
+
 export default function xdmtracker() {
   const meta = {
     name: "xdmtracker",
@@ -44,6 +57,11 @@ export default function xdmtracker() {
     let _definition = {}
     let _defaults = null
     let _defined = false
+    // Render gate: a promise that settles when the most recent renderDecisions
+    // event has finished rendering. A later event asking for
+    // personalization.includeRenderedPropositions waits on it (one-shot) so the
+    // rendered propositions are available to fold into that single hit.
+    let _render_gate = null
 
     return Object.freeze({
       /**
@@ -82,9 +100,19 @@ export default function xdmtracker() {
        * The event name (event.message.event) is used to look up the definition.
        * The component state is extracted automatically via catch(event).get().
        *
+       * Render gate (personalization): if an event renders decisions
+       * (renderDecisions:true), its alloy promise is captured. A subsequent event
+       * whose definition sets personalization.includeRenderedPropositions:true is
+       * deferred until that render settles (or a gateTimeout elapses), so the
+       * rendered propositions can be folded into it. This is driven purely by these
+       * flags — never by event names — so any project can pick its own
+       * earliest-render event and its own page-view event.
+       *
        * @param {Object} event          - ACDL event from Adobe Data Collection
-       * @param {Object} [send_opts]    - Send options: renderDecisions, documentUnloading, datastreamId, data
-       * @returns {Object|undefined} The payload object (useful for debugging)
+       * @param {Object} [send_opts]    - Send options: renderDecisions, documentUnloading,
+       *                                   datastreamId, data, personalization, gateTimeout
+       * @returns {Object|undefined} The payload object (useful for debugging). Note: with
+       *   the render gate active, the actual alloy send may happen asynchronously after return.
        */
       track(event, send_opts) {
         if (!_defined) {
@@ -115,16 +143,46 @@ export default function xdmtracker() {
 
         context.logger.info("prepared payload", payload)
 
-        // 5. Send via alloy
-        try {
-          if (typeof window.alloy !== "function") {
-            context.logger.error("alloy() is not available")
-            return payload
+        // Local sender: perform the alloy call, returning its promise (or undefined).
+        const send = () => {
+          try {
+            if (typeof window.alloy !== "function") {
+              context.logger.error("alloy() is not available")
+              return undefined
+            }
+            return window.alloy("sendEvent", payload)
+          } catch (err) {
+            context.logger.error("sendEvent failed:", err, payload)
+            return undefined
           }
-          window.alloy("sendEvent", payload)
-        } catch (err) {
-          context.logger.error("sendEvent failed:", err, payload)
         }
+
+        // 5. Send via alloy, honoring the render gate.
+        const renders = payload.renderDecisions === true
+        const awaits_render = !!(def.personalization && def.personalization.includeRenderedPropositions)
+
+        if (renders) {
+          // Triggers rendering — capture a settle signal so a later page view can
+          // wait for it. Normalized via then(noop, noop): resolves on success OR
+          // error, and prevents unhandled rejections.
+          const p = send()
+          _render_gate = p && typeof p.then === "function" ? p.then(noop, noop) : null
+        } else if (awaits_render && _render_gate) {
+          // Defer until the prior render settles so its rendered propositions can be
+          // folded in — but never hang: a timeout fallback always fires the send.
+          const gate = _render_gate
+          _render_gate = null // one-shot
+          const ms =
+            def.gateTimeout != null
+              ? def.gateTimeout
+              : send_opts && send_opts.gateTimeout != null
+              ? send_opts.gateTimeout
+              : GATE_TIMEOUT_MS
+          Promise.race([gate, timeout(ms)]).then(send)
+        } else {
+          send()
+        }
+
         return payload
       },
     })

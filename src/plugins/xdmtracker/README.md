@@ -11,9 +11,10 @@
    - [XDM mapping reference](#xdm-mapping-reference)
    - [Definition fields](#definition-fields)
    - [Send options](#send-options)
-5. [Page view vs. link click](#05-page-view-vs-link-click)
-6. [Custom XDM fields](#06-custom-xdm-fields)
-7. [Module structure](#07-module-structure)
+5. [Page view vs. link click vs. fetch](#05-page-view-vs-link-click-vs-fetch)
+6. [Personalization & display events](#06-personalization--display-events)
+7. [Custom XDM fields](#07-custom-xdm-fields)
+8. [Module structure](#08-module-structure)
 
 ---
 
@@ -70,8 +71,8 @@ acdl_helper.xdmtracker.define({
 })
 ```
 
-> **Note:** `eventType` is optional. If omitted, it defaults automatically based on the `pageView` flag:
-> `pageView: true` → `"web.webpagedetails.pageViews"` | otherwise → `"web.webInteraction.linkClicks"`
+> **Note:** `eventType` is optional. If omitted, it defaults automatically based on the `pageView` / `fetchOnly` flags:
+> `pageView: true` → `"web.webpagedetails.pageViews"` | `fetchOnly: true` → `"decisioning.propositionFetch"` | otherwise → `"web.webInteraction.linkClicks"`
 
 ### `track(event, send_opts?)`
 
@@ -96,7 +97,7 @@ acdl_helper.xdmtracker.track(event, {
 
 The `defaults` object defines base variables that are merged into every `sendEvent` payload. Event definitions then overlay their delta on top — if both set the same variable, the event definition wins.
 
-Defaults support the same XDM-building fields as event definitions: `eVars`, `props`, `lists`, `events`, `xdm`, `xdmPairs`. Event-specific fields (`pageView`, `eventType`, `webInteractionName`, `webInteractionType`) and send options (`renderDecisions`, etc.) are NOT supported in defaults.
+Defaults support the same XDM-building fields as event definitions: `eVars`, `props`, `lists`, `events`, `xdm`, `xdmPairs`. Event-specific fields (`pageView`, `fetchOnly`, `eventType`, `webInteractionName`, `webInteractionType`) and send options (`renderDecisions`, `personalization`, etc.) are NOT supported in defaults.
 
 **Merge order:** defaults first → event definition on top
 
@@ -142,6 +143,7 @@ Where each field lands in the `alloy("sendEvent", payload)` call:
 | Field | Lands in | What it does |
 |-------|----------|-------------|
 | `pageView` | controls XDM web structure | `true` → `web.webPageDetails.pageViews`, `false` → `web.webInteraction` |
+| `fetchOnly` | controls XDM web structure + `payload.edgeConfigOverrides` | `true` → personalization prefetch: defaults `eventType` to `decisioning.propositionFetch` **and** auto-disables the Adobe Analytics service for this event (`com_adobe_analytics.enabled = false`) so it is not recorded as a page view |
 | `eventType` | `payload.type` → alloy maps to `xdm.eventType` | Classifies the event (e.g. `"web.webpagedetails.pageViews"`, `"commerce.purchases"`) |
 | `webInteractionName` | `xdm.web.webInteraction.name` | Link name in AA reports — maps to `s.tl(this, 'o', 'THIS VALUE')`. Defaults to event key |
 | `webInteractionType` | `xdm.web.webInteraction.type` | Link click type — maps to `s.tl(this, 'o'\|'d'\|'e', ...)` |
@@ -152,14 +154,18 @@ Where each field lands in the `alloy("sendEvent", payload)` call:
 | `renderDecisions` | `payload.renderDecisions` | Tells Adobe Target/Personalization to auto-render decisions |
 | `documentUnloading` | `payload.documentUnloading` | Uses `navigator.sendBeacon` instead of fetch — critical for clicks that navigate away |
 | `datastreamId` | `payload.edgeConfigOverrides.datastreamId` | Routes the event to a different datastream than the alloy instance default |
+| `edgeConfigOverrides` | `payload.edgeConfigOverrides` (merged) | Per-event [datastream overrides](https://experienceleague.adobe.com/en/docs/experience-platform/web-sdk/commands/datastream-overrides), e.g. `{ com_adobe_analytics: { enabled: false } }`. Merged with `datastreamId` and `fetchOnly`'s auto-suppression |
 | `data` | `payload.data` | Non-XDM data passthrough (e.g. for data element mappings in server-side rules) |
+| `personalization` | `payload.personalization` | Personalization options passed straight to alloy, e.g. `{ sendDisplayEvent: false }`, `{ includeRenderedPropositions: true }` (see [§06](#06-personalization--display-events)) |
+| `gateTimeout` | render gate only | Max ms a page view waits for a prior render before sending anyway (default `2000`) |
 
 ### Definition fields
 
 | Field      | Type    | Default | Description |
 |------------|---------|---------|-------------|
 | `pageView` | Boolean | `false` | `true` = page view (`s.t()`), sets `webPageDetails.pageViews.value = 1`. Omit or `false` = link click (`s.tl()`) |
-| `eventType` | String | auto | XDM event type (e.g. `"web.webpagedetails.pageViews"`, `"commerce.purchases"`). Defaults based on `pageView` flag |
+| `fetchOnly` | Boolean | `false` | `true` = personalization prefetch: defaults `eventType` to `decisioning.propositionFetch` **and** auto-disables Adobe Analytics for this event so it isn't counted as a page view. See [§06](#06-personalization--display-events) |
+| `eventType` | String | auto | XDM event type (e.g. `"web.webpagedetails.pageViews"`, `"commerce.purchases"`). Defaults based on `pageView` / `fetchOnly` flags |
 | `webInteractionName` | String | event key | Link click only: the name shown in AA reports. Defaults to the ACDL event name |
 | `webInteractionType` | String | `"other"` | Link click only: `"other"`, `"download"`, or `"exit"` |
 | `events`   | Array   | — | AA events: `"event48"`, `"event48=22"`, `{ event48: 3 }`, or `(cmp) => ...` |
@@ -197,6 +203,9 @@ Configurable at both definition level (per-event override) and `send_opts` level
 | `documentUnloading` | `false` | Use `navigator.sendBeacon` for page-exit tracking |
 | `datastreamId` | `null` | Override the alloy instance's default datastream |
 | `data` | `null` | Non-XDM data passthrough |
+| `edgeConfigOverrides` | `null` | Per-event [datastream overrides](https://experienceleague.adobe.com/en/docs/experience-platform/web-sdk/commands/datastream-overrides), merged with `datastreamId` and `fetchOnly`'s auto-suppression |
+| `personalization` | `null` | Personalization options passed to alloy (e.g. `sendDisplayEvent`, `includeRenderedPropositions`) — see [§06](#06-personalization--display-events) |
+| `gateTimeout` | `2000` | Render-gate safety timeout (ms) — see [§06](#06-personalization--display-events) |
 
 ```javascript
 const definition = {
@@ -223,14 +232,15 @@ acdl_helper.xdmtracker.track(event, {
 // → link:click gets renderDecisions: false (from send_opts)
 ```
 
-## 05 Page view vs. link click
+## 05 Page view vs. link click vs. fetch
 
-The `pageView` flag controls which XDM web fields are auto-populated:
+The `pageView` / `fetchOnly` flags control which XDM web fields are auto-populated. **Important:** Adobe Analytics decides page view vs. link from the presence of `web.webPageDetails` vs. `web.webInteraction.type` — **not** from `eventType` ([Edge Network event types in Adobe Analytics](https://experienceleague.adobe.com/en/docs/analytics/implementation/aep-edge/hit-types)). That is why these flags, not `eventType`, govern how a hit is counted.
 
-| `pageView` | XDM fields set | `eventType` default | Equivalent |
+| flag | XDM fields set | `eventType` default | Equivalent |
 |---|---|---|---|
-| `true` | `web.webPageDetails.pageViews.value = 1` | `"web.webpagedetails.pageViews"` | `s.t()` |
-| `false` / omitted | `web.webInteraction.name`, `.type`, `.linkClicks.value = 1` | `"web.webInteraction.linkClicks"` | `s.tl()` |
+| `pageView: true` | `web.webPageDetails.pageViews.value = 1` | `"web.webpagedetails.pageViews"` | `s.t()` |
+| neither (default) | `web.webInteraction.name`, `.type`, `.linkClicks.value = 1` | `"web.webInteraction.linkClicks"` | `s.tl()` |
+| `fetchOnly: true` | *(none in our payload; SDK still auto-adds `webPageDetails.URL`)* | `"decisioning.propositionFetch"` | personalization prefetch — **suppressed from AA** via `edgeConfigOverrides` (see §06) |
 
 ```javascript
 const definition = {
@@ -254,7 +264,79 @@ const definition = {
 }
 ```
 
-## 06 Custom XDM fields
+## 06 Personalization & display events
+
+When you render personalization with `renderDecisions: true`, the Web SDK (by default, `sendDisplayEvent: true`) fires a **second** `interact` call — the display notification (`decisioning.propositionDisplay`). That second call carries an auto-collected `web.webPageDetails.URL` and no `web.webInteraction.type`, so **Adobe Analytics counts it as a second page view** ([hit-types rule](https://experienceleague.adobe.com/en/docs/analytics/implementation/aep-edge/hit-types)) — inflating Page Views and deflating Bounce Rate and Single Page Visits.
+
+The fix is Adobe's [top/bottom-of-page pattern](https://experienceleague.adobe.com/en/docs/experience-platform/collection/use-cases/personalization/display-events), expressed here as two events:
+
+1. **Prefetch event** — render personalization early, suppressed from Adobe Analytics, with the display event suppressed:
+   `fetchOnly: true`, `renderDecisions: true`, `personalization: { sendDisplayEvent: false }`.
+2. **Page-view event** — your normal page view, folding the suppressed display notification into that single hit:
+   `pageView: true`, `personalization: { includeRenderedPropositions: true }`.
+
+The result on a single-page visit is **one** Adobe Analytics page view that also carries the A4T/Target attribution — no double counting, personalization reporting intact.
+
+> **How the prefetch is kept out of Adobe Analytics (important):** Adobe Analytics decides what is a page view purely from `web.webPageDetails` ([hit-types rule](https://experienceleague.adobe.com/en/docs/analytics/implementation/aep-edge/hit-types)) — **not** from `eventType`. The Web SDK auto-collects `web.webPageDetails.URL` on every event, so the prefetch *would* be counted as a second page view, and the `decisioning.propositionFetch` type does **not** reliably make AA drop it (verified in practice — it was still recorded). Therefore `fetchOnly: true` automatically adds `edgeConfigOverrides: { com_adobe_analytics: { enabled: false } }`, which deterministically tells the Edge to skip the Adobe Analytics service for that event. Target and AEP still receive it; only Adobe Analytics is bypassed. You can override this by setting `com_adobe_analytics` yourself in the event's `edgeConfigOverrides`.
+>
+> `fetchOnly` events also **skip the merged `defaults`**, so the prefetch payload stays minimal (no AA eVars/props) — handy when inspecting collect calls, so it's not confused with the page view. Note the Web SDK still auto-collects `web.webPageDetails.URL` via context collection (a global `configure({ context })` setting, not per-event), so the prefetch carries a URL but no `pageViews.value` — the absence of `pageViews.value` and the disabled-AA override are what mark it as a fetch, not a page view.
+
+> **Generic by design:** the plugin keys on these flags, **never on event names**. Use whatever your project's earliest reliable event is for the prefetch (`app:load`, `site:init`, `dom:ready`, …) and your usual page-view event for the page view.
+
+```javascript
+acdl_helper.xdmtracker.define({
+  defaults,
+  events: {
+    // 1. earliest reliable event → render personalization, kept out of Adobe
+    //    Analytics (fetchOnly auto-disables AA), standalone display suppressed
+    "app:load": {
+      fetchOnly: true,
+      renderDecisions: true,
+      personalization: { sendDisplayEvent: false },
+    },
+    // 2. the page view → folds the display notification into this single hit
+    "acdl_helper:page:load": {
+      pageView: true,
+      personalization: { includeRenderedPropositions: true },
+    },
+  },
+})
+```
+
+### Render gate (automatic ordering)
+
+`includeRenderedPropositions` can only fold in propositions that have already rendered. The plugin handles this automatically: when an event renders decisions (`renderDecisions: true`), its alloy promise is captured; the next event whose definition sets `personalization.includeRenderedPropositions: true` is **deferred until that render settles**, then sent.
+
+- It is driven purely by the flags above — order is temporal (whichever event renders first), not name-based.
+- It **never hangs**: a `gateTimeout` (default `2000` ms) always fires the page view even if the render stalls, and the underlying alloy promise resolves even when there is nothing to personalize.
+- One-shot: each render gate is consumed by the first awaiting page view.
+- No prefetch in play? An `includeRenderedPropositions` event with no pending render just sends immediately.
+
+> **Consent fallback:** when personalization is not active (e.g. no consent), simply keep a single `pageView: true, renderDecisions: true` (or no `renderDecisions` at all) page-view event — no prefetch, no gate, behavior unchanged.
+
+### Requesting decision scopes
+
+The entire `personalization` object is passed straight to `alloy("sendEvent")`, so you can request named decision scopes or surfaces alongside the global `__view__` scope:
+
+```javascript
+"app:load": {
+  fetchOnly: true,
+  renderDecisions: true,
+  personalization: {
+    sendDisplayEvent: false,
+    decisionScopes: ["home-hero", "promo-banner"], // named scopes (≈ named mboxes)
+    // surfaces: ["web://example.com/path"],        // AJO / SPA surfaces
+  },
+},
+```
+
+> **Scope mapping (Target):** the at.js global mbox `target-global-mbox` maps to the Web SDK `__view__` scope; a *named* mbox maps to a decision scope of the same name.
+
+> **⚠️ Auto-render limitation (sharp edge):** `renderDecisions: true` always requests **and auto-renders** the global `__view__` scope (Target VEC / global-mbox, form-based DOM actions). That is the only scope the Web SDK auto-renders, and it is the path the prefetch + `includeRenderedPropositions` fold-in fully automates.
+>
+> **Named scopes and surfaces are returned in the response but are NOT auto-rendered** — you must render them yourself (`applyPropositions` or custom DOM code) and send their display notifications manually. The plugin does not currently surface that response (`track()` returns the built payload, not the alloy promise), so xdmtracker fully automates **only** the `__view__` case. Rendering named scopes would require a future enhancement (e.g. `track()` returning the promise, or a render callback).
+
+## 07 Custom XDM fields
 
 Use the `xdm` field to set arbitrary XDM properties beyond eVars/props/events. Custom XDM fields are **deep-merged** with the auto-generated AA mappings, so you can freely combine them with `eVars`, `events`, etc.
 
@@ -324,7 +406,7 @@ const definition = {
 
 All values — including nested ones — can be resolver functions `(cmp) => value` that receive the component state.
 
-## 07 Module structure
+## 08 Module structure
 
 ```
 xdmtracker/
