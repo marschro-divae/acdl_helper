@@ -32,8 +32,10 @@ Concrete example (this repo, v1.7.0): the docs state that a `decisioning.proposi
 ## Way of working
 Open work is tracked in [BACKLOG.md](BACKLOG.md) (sections: IDEATION, FEATURES, BUGS, CHORES). When an item ships, **remove it from `BACKLOG.md`** and record it in `CHANGELOG.md` under its version — the backlog holds only open work, the changelog is the history of done work.
 
+Persistent context lives in [`DOCS/`](DOCS/) (`FEATURES/<slug>/` and `REFACTORING/<slug>/`, each with a `README.md` plus any assets like reporting slide decks). `BACKLOG.md` is pruned and `CHANGELOG.md` is terse, so the *why* — requirements, investigation, rejected approaches, reasoning — is captured here and persists. Start a `DOCS/` entry at the **start** of any non-trivial feature/refactor (when you'd add the backlog line) and keep it updated through delivery. See [`DOCS/README.md`](DOCS/README.md) for the convention and [`DOCS/FEATURES/xdmtracker-single-page-view/`](DOCS/FEATURES/xdmtracker-single-page-view/) as the template.
+
 For any non-trivial change, follow these steps in order:
-1. **Feature description** — capture the intent / problem and the desired outcome (add it to `BACKLOG.md` under the right section if not already there).
+1. **Feature description** — capture the intent / problem and the desired outcome (add it to `BACKLOG.md` under the right section if not already there). For non-trivial work, also open a `DOCS/FEATURES/<slug>/` (or `REFACTORING/<slug>/`) entry now and grow it through the steps below.
 2. **Planning** — agree an approach before coding (plan mode for non-trivial work). Surface trade-offs and open decisions.
 3. **Implementation** — small, focused edits matching existing conventions.
 4. **Testing** — characterization tests first (lock current behavior), then implement, then tests for new behavior; `npm test` must be green.
