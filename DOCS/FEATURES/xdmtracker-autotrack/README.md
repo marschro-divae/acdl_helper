@@ -69,17 +69,62 @@ future ones, in chronological order — so the early prefetch and the page-load 
 both tracked, and the render-gate ordering (prefetch `renderDecisions` → page view
 `includeRenderedPropositions`) is preserved.
 
+### 2a. Live-event drop — the timing bug (found after first implementation)
+
+The first cut registered the listener **synchronously inside `provider()`**. In a real
+AEM Core Components page this tracked **only the init-burst (snapshot) events** — the
+page view (`page` plugin's `setTimeout(0)` `acdl_helper:page:load`) and **every user
+interaction** were silently dropped. The team's drop-in replacement — a native listener
+registered **after** `acdl_helper.xdmtracker` exists — caught everything:
+
+```js
+// works: registered post-init, on the live data layer
+window.adobeDataLayer.push(dl =>
+  dl.addEventListener("adobeDataLayer:event", h, { scope: "all" }))
+```
+
+**Root cause = timing, not the handle.** `provider()` runs **mid-init, re-entrantly
+inside acdl_helper's dependency-resolver ACDL dispatch** (the `autoTrack enabled` log
+precedes `API now available`). A listener added during that active dispatch binds to the
+replayed snapshot and then never receives later live pushes. The working replacement
+differs in exactly one variable — it registers **after** init, in a clean macrotask, on
+the idle data layer.
+
+> ⚠️ A tempting-but-wrong diagnosis was "`context.acdl` is a snapshot object that
+> doesn't subscribe live." Not mechanically true: `context.acdl.add_event_listener(t,h,o)`
+> *is* `window.adobeDataLayer.push(dl => dl.addEventListener(t,h,o))` — the identical
+> live subscription the working replacement uses. The handle is the same; only the
+> **timing** differs.
+
+**Could not reproduce in Node.** The real `@adobe/adobe-client-data-layer` was tested
+across **v1.1.5, 2.0.0, 2.0.2, 3.0.0, 3.0.1**, faithfully mimicking the re-entrant
+registration; in every version a `scope:"all"` listener still caught future events. So
+the live-drop is specific to the AEM-shipped ACDL build/runtime and is **not** reproduced
+by the standalone package. Per `CLAUDE.md` ("observed behavior wins"), the fix encodes
+the in-project observation.
+
+**Fix:** defer the registration to a **post-init macrotask** (`setTimeout 0`), on the
+same live data layer (`context.acdl`), keeping `scope:"all"` so already-queued events
+still replay. This makes autoTrack's registration equivalent to the proven replacement.
+
+> **Validation note:** unit tests can only prove the registration is now deferred (and
+> still tracks) — they cannot prove the live AEM ACDL now delivers live events, because
+> Node's ACDL never dropped them. Final confirmation must be in the real page:
+> `autoTrack: true` → page view + consecutive interactions all track.
+
 ## 3. The solution
 
-Add `autoTrack: boolean` (default `false`) to the plugin config. When `true`, during
-`provider()` setup — which runs synchronously in `init_plugins`, **before**
-`register_plugin_event_handler` registers the `page` plugin's `cmp:show` handler — the
+Add `autoTrack: boolean` (default `false`) to the plugin config. When `true`, the
 plugin:
 
-1. loads the config-time definition (existing v1.8.0 behavior), then
-2. registers a **single** `adobeDataLayer:event` listener with `{ scope: 'all' }` via
-   `context.acdl`, whose handler normalizes each event as above and calls the
-   **internal** `track_impl`. Events with no matching definition no-op (as today).
+1. loads the config-time definition during `provider()` setup (existing v1.8.0
+   behavior), then
+2. **schedules** (via `setTimeout 0`, see §2a) the registration of a **single**
+   `adobeDataLayer:event` listener with `{ scope: 'all' }` via `context.acdl`, whose
+   handler normalizes each event to `{ message, $type }` and calls the **internal**
+   `track_impl`. The registration fires in the next macrotask — after init has fully
+   unwound and the ACDL dispatch is idle — so the subscription receives live events.
+   Events with no matching definition no-op (as today).
 
 `track()` is refactored to delegate to `track_impl` — public behavior identical.
 

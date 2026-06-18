@@ -188,13 +188,27 @@ export default function xdmtracker() {
 
     // autoTrack: self-register a single data-layer listener so the plugin tracks
     // every matching event itself — no external track rule, no manual listener, no
-    // readiness workaround. Registered here (synchronously, during init_plugins,
-    // before the page plugin's cmp:show handler is even registered) and driven by
-    // the *internal* track_impl, so it can never race the global API.
+    // readiness workaround. Driven by the *internal* track_impl, so it never depends
+    // on the global acdl_helper.xdmtracker API existing yet.
     //
-    // scope:"all" replays already-queued events (e.g. an early prefetch) AND
-    // delivers all future ones, in chronological order — same mechanism the page
-    // plugin uses for page_load_dependencies.
+    // IMPORTANT — registration is DEFERRED to a macrotask (setTimeout 0), NOT done
+    // synchronously here. provider() runs mid-init, re-entrantly inside acdl_helper's
+    // dependency-resolver ACDL dispatch (note the order of the "autoTrack enabled" vs
+    // "API now available" logs). A listener registered during that active dispatch,
+    // in the live AEM Core Components ACDL, only replays the queued snapshot and then
+    // NEVER fires for later pushes — so the page view (page plugin's setTimeout(0)
+    // page:load) and every user interaction are silently dropped, while only the
+    // init-burst events get tracked. Registering AFTER init unwinds, on the now-idle
+    // live data layer, makes the subscription stick for future events. This mirrors
+    // the proven consumer workaround: a post-init
+    //   adobeDataLayer.push(dl => dl.addEventListener("adobeDataLayer:event", h, { scope: "all" }))
+    // which `context.acdl.add_event_listener` performs verbatim — so the fix is the
+    // timing, not the handle. (Our standalone-ACDL Node tests across v1.1.5–v3.0.1
+    // could NOT reproduce the live-drop; this encodes observed AEM behavior — see
+    // DOCS/FEATURES/xdmtracker-autotrack. "Observed behavior wins.")
+    //
+    // scope:"all" still replays anything already queued at registration, so the early
+    // prefetch / page-load are not lost even though we register slightly later.
     //
     // A raw data-layer listener event carries `event`/`eventInfo` at the top level
     // and, unlike an Adobe Launch rule event, has no `$type`. We wrap it as
@@ -205,8 +219,12 @@ export default function xdmtracker() {
     if (context.config && context.config.autoTrack && context.acdl) {
       const auto_handler = acdl_event =>
         track_impl({ message: acdl_event, $type: "adobe-client-data-layer:event" })
-      context.acdl.add_event_listener("adobeDataLayer:event", auto_handler, { scope: "all" })
-      context.logger.success("autoTrack enabled — tracking all defined data-layer events automatically")
+      const register_auto_track = () =>
+        context.acdl.add_event_listener("adobeDataLayer:event", auto_handler, { scope: "all" })
+      // Defer out of the synchronous init dispatch (see note above).
+      if (typeof setTimeout === "function") setTimeout(register_auto_track, 0)
+      else register_auto_track()
+      context.logger.success("autoTrack enabled — subscribing to data-layer events after init")
     }
 
     return Object.freeze({

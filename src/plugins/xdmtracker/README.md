@@ -72,7 +72,7 @@ acdl_helper({
 })
 ```
 
-What it does: during plugin init the plugin registers **one** data-layer listener (`adobeDataLayer:event`, `scope: "all"`) and tracks every event whose name matches the definition. Events with no matching definition are ignored (as usual).
+What it does: right after init the plugin registers **one** data-layer listener (`adobeDataLayer:event`, `scope: "all"`) and tracks every event whose name matches the definition. Events with no matching definition are ignored (as usual). (Registration is deferred to just after init on purpose — registering mid-init binds only to the already-queued snapshot in the live ACDL and misses later events; `scope: "all"` still replays anything queued before registration, so nothing early is lost.)
 
 Why use it:
 
