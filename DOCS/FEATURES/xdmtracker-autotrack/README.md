@@ -1,6 +1,6 @@
 # xdmtracker — `autoTrack` self-registered tracking
 
-> **Status:** ✅ Implemented in **v1.9.0** (source; pending build + push)
+> **Status:** ✅ Feature in **v1.9.0**; live-event drop fixed in **v1.9.1** (see §2a). Pending in-project validation.
 > **Plugin:** [`src/plugins/xdmtracker`](../../../src/plugins/xdmtracker)
 > **Builds on:** [config-time definitions (v1.8.0)](../xdmtracker-config-time-define/)
 > **Type:** API enhancement (backward compatible)
