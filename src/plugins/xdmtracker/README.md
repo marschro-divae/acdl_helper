@@ -4,6 +4,7 @@
 
 1. [Description](#01-description)
 2. [API](#02-api)
+   - [Registering the definition: config-time vs. define()](#registering-the-definition-config-time-vs-define)
    - [define(config)](#defineconfig)
    - [track(event, send_opts?)](#trackevent-send_opts)
 3. [Defaults](#03-defaults)
@@ -30,9 +31,35 @@ Define your tracking events once as a configuration object (keyed by ACDL event 
 
 ## 02 API
 
+### Registering the definition: config-time vs. `define()`
+
+The tracking definition (`{ events, defaults? }`) can be registered **two ways**. They take the same shape — pick whichever fits your setup.
+
+**1. At init, via the plugin config (recommended):**
+
+```javascript
+acdl_helper({
+  plugins: {
+    xdmtracker: { defaults: {...}, events: {...} },   // ← registered during plugin init
+    page: { ... },
+    component: {},
+  },
+})
+```
+
+The definition is applied while the plugin initializes — **before any plugin can emit an event**. This avoids an initialization-ordering race: the `page` plugin emits its page-load event on a `setTimeout(0)`, which can otherwise fire before a separately-triggered `define()` runs, so the page view is dropped. With a config-time definition the tracker is always ready in time, so you need **no** `page_load_dependencies` gating and **no** separate `define()` action — just one init call plus your `track()` rule.
+
+> Because the definition lives in your `acdl_helper({...})` call (real JavaScript), its **resolver functions work normally**. Note this also means a config-time definition is **not** remote-config-overridable — by design; a tracking schema is code, not remote JSON settings.
+
+**2. At runtime, via [`define()`](#defineconfig):**
+
+Use this when the schema isn't known at init, or to **replace** a definition later. A `define()` call **overrides** a config-time definition (and logs an `already defined — overwriting` warning). Because `acdl_helper(config)` initializes asynchronously, `acdl_helper.xdmtracker` is not available synchronously after it returns — call `define()` from a later rule/action, or in response to the library's `…:dependencies_resolved` data-layer event (pushed once all plugin dependencies resolve and the API is assembled).
+
+> **Precedence:** config-time definition is applied first; a later `define()` replaces it wholesale (events + defaults). `xdmtracker: {}` (empty) registers nothing and behaves exactly as before.
+
 ### `define(config)`
 
-Load a tracking definition with optional defaults. Call once after the library is initialized.
+Load a tracking definition with optional defaults. Optional if the definition is supplied via plugin config (above); otherwise call it once after the library is initialized.
 
 ```javascript
 acdl_helper.xdmtracker.define({

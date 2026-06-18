@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-06-18
+
+_Motivation: when a project uses `xdmtracker` together with the `page` plugin, an initialization-ordering race could drop the page view. `acdl_helper(config)` initializes asynchronously, so integrators had to call `xdmtracker.define(...)` from a separate Adobe Tags action — and the `page` plugin emits its page-load event on a `setTimeout(0)` macrotask that can fire **before** that separate `define()` runs, so `track('…:page:load')` ran while the tracker was undefined and the event was dropped. The only workaround was hand-gating `page:load` via `page_load_dependencies` plus a marker event. This release lets the tracking definition be registered at init time, removing the race for all event sources._
+
+### Added
+
+- **xdmtracker: config-time tracking definitions** — the tracking definition can now be supplied in the plugin config: `plugins: { xdmtracker: { events, defaults } }`. It is registered during plugin init (in `provider()` setup, which runs synchronously in `init_plugins` before any plugin event handler is registered), so `track()` works immediately and the `page` plugin's automatic page-load event is captured **without** `page_load_dependencies` gating or a separate `define()` action. Resolver functions work as usual (the definition is inline JavaScript); a config-time definition is intentionally **not** remote-config-overridable. Backward compatible: `define()` is unchanged and `xdmtracker: {}` (empty) remains a no-op.
+- **Tests** — characterization tests for the existing `define()`/`track()` guard, plus coverage for config-time `events`/`defaults`, resolver execution, override precedence, and validation (`tests/config-define.test.js`).
+- **README (xdmtracker): "Registering the definition: config-time vs. `define()`"** — documents the two registration paths, precedence (a later `define()` overrides config), the no-remote-override caveat, and the existing `…:dependencies_resolved` data-layer event as the post-init/ready signal.
+
+### Changed
+
+- **xdmtracker `define()`** — refactored to share an internal `load_definition()` with the config-time path. Behavior unchanged; log/error wording now indicates whether a definition came from plugin config or `define()`.
+
 ## [1.7.0] - 2026-06-16
 
 _Motivation: on personalized pages, `renderDecisions:true` made the Web SDK send a second `interact` call (the display notification). Because Adobe Analytics classifies any event carrying `web.webPageDetails` as a page view — and the SDK auto-collects the page URL on every event — that second call was counted as a **second page view**, inflating Page Views and deflating Bounce Rate / Single Page Visits. This release lets xdmtracker implement Adobe's prefetch + page-view pattern so a personalized visit produces exactly one page view while keeping A4T/Target attribution._

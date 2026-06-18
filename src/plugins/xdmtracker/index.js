@@ -63,35 +63,65 @@ export default function xdmtracker() {
     // rendered propositions are available to fold into that single hit.
     let _render_gate = null
 
+    /**
+     * Validate a tracking definition and store it. Shared by the public
+     * define() method and the config-time path below. Returns true on success.
+     *
+     * `source` only tweaks the log/error wording ("define()" vs "config") so
+     * integrators can tell which path produced a message.
+     */
+    function load_definition(config, source) {
+      const label = source === "config" ? "xdmtracker config" : "define()"
+      if (!config || typeof config !== "object" || Array.isArray(config)) {
+        context.logger.error(`${label} expects a config object: { events: {...}, defaults?: {...} }`)
+        return false
+      }
+      if (!config.events || typeof config.events !== "object" || Array.isArray(config.events)) {
+        context.logger.error(`${label} requires config.events to be an object`)
+        return false
+      }
+      if (config.defaults != null && (typeof config.defaults !== "object" || Array.isArray(config.defaults))) {
+        context.logger.error(`${label}: config.defaults must be an object`)
+        return false
+      }
+      if (_defined) {
+        context.logger.warning("xdmtracker already defined — overwriting previous definition")
+      }
+      _definition = config.events
+      _defaults = config.defaults || null
+      _defined = true
+      context.logger.success(
+        `Tracking definition loaded (${Object.keys(_definition).length} event keys, defaults: ${
+          _defaults ? "yes" : "no"
+        }, via ${source === "config" ? "plugin config" : "define()"})`
+      )
+      return true
+    }
+
+    // Config-time definition: if the plugin config carries a tracking definition
+    // (events and/or defaults), register it now — during provider() setup, which
+    // runs synchronously as part of init_plugins, before any plugin event handler
+    // is registered. This closes the init-ordering race where the page plugin's
+    // setTimeout(0) page-load emit could fire before a separate define() call.
+    // A later define() still overrides this (load_definition warns on overwrite).
+    if (context.config && (context.config.events != null || context.config.defaults != null)) {
+      load_definition({ events: context.config.events, defaults: context.config.defaults }, "config")
+    }
+
     return Object.freeze({
       /**
        * Load a tracking definition with optional defaults.
+       *
+       * Optional when the definition is supplied via plugin config
+       * (`plugins: { xdmtracker: { events, defaults } }`); calling define()
+       * afterwards overrides the config-time definition.
+       *
        * @param {Object} config
        * @param {Object} config.events    - Map of ACDL event names to tracking descriptors
        * @param {Object} [config.defaults] - Base variables merged into every sendEvent (eVars, props, lists, events, xdm, xdmPairs)
        */
       define(config) {
-        if (!config || typeof config !== "object" || Array.isArray(config)) {
-          context.logger.error("define() expects a config object: { events: {...}, defaults?: {...} }")
-          return
-        }
-        if (!config.events || typeof config.events !== "object" || Array.isArray(config.events)) {
-          context.logger.error("define() requires config.events to be an object")
-          return
-        }
-        if (config.defaults != null && (typeof config.defaults !== "object" || Array.isArray(config.defaults))) {
-          context.logger.error("config.defaults must be an object")
-          return
-        }
-        if (_defined) {
-          context.logger.warning("xdmtracker already defined — overwriting previous definition")
-        }
-        _definition = config.events
-        _defaults = config.defaults || null
-        _defined = true
-        context.logger.success(
-          `Tracking definition loaded (${Object.keys(_definition).length} event keys, defaults: ${_defaults ? "yes" : "no"})`
-        )
+        load_definition(config, "define")
       },
 
       /**
