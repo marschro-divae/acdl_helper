@@ -5,6 +5,7 @@
 1. [Description](#01-description)
 2. [API](#02-api)
    - [Registering the definition: config-time vs. define()](#registering-the-definition-config-time-vs-define)
+   - [autoTrack — self-registered tracking](#autotrack--self-registered-tracking)
    - [define(config)](#defineconfig)
    - [track(event, send_opts?)](#trackevent-send_opts)
 3. [Defaults](#03-defaults)
@@ -56,6 +57,38 @@ The definition is applied while the plugin initializes — **before any plugin c
 Use this when the schema isn't known at init, or to **replace** a definition later. A `define()` call **overrides** a config-time definition (and logs an `already defined — overwriting` warning). Because `acdl_helper(config)` initializes asynchronously, `acdl_helper.xdmtracker` is not available synchronously after it returns — call `define()` from a later rule/action, or in response to the library's `…:dependencies_resolved` data-layer event (pushed once all plugin dependencies resolve and the API is assembled).
 
 > **Precedence:** config-time definition is applied first; a later `define()` replaces it wholesale (events + defaults). `xdmtracker: {}` (empty) registers nothing and behaves exactly as before.
+
+### autoTrack — self-registered tracking
+
+By default you supply the definition (config-time or via `define()`) and then drive sending yourself — a Launch "track" rule, or your own listener, calling `track(event)` per event. Set **`autoTrack: true`** in the plugin config and the plugin does the listening and sending **itself**:
+
+```javascript
+acdl_helper({
+  plugins: {
+    xdmtracker: { defaults: {...}, events: {...}, autoTrack: true },   // define + listen + track, all here
+    page: { ... },
+    component: {},
+  },
+})
+```
+
+What it does: during plugin init the plugin registers **one** data-layer listener (`adobeDataLayer:event`, `scope: "all"`) and tracks every event whose name matches the definition. Events with no matching definition are ignored (as usual).
+
+Why use it:
+
+- **No separate track rule and no manual listener** — the whole tracking concern lives in one config block.
+- **No init-timing race / readiness workaround.** The listener is registered from *inside* the plugin and calls the plugin's internal tracker, so it never depends on the global `acdl_helper.xdmtracker` API existing yet (no `Cannot read properties of undefined (reading 'track')`, no polling/guarding).
+- **Nothing dropped.** `scope: "all"` replays events already queued before init (e.g. an early personalization prefetch and the page-load event) **and** delivers every later interaction — in order, so the [render gate](#06-personalization--display-events) still works (prefetch → unified page view).
+
+```javascript
+// Default: false — omit it and behavior is exactly as before (you call track() yourself).
+xdmtracker: { events: {...} }            // manual tracking
+xdmtracker: { events: {...}, autoTrack: true }   // automatic tracking
+```
+
+> ⚠ **Do not double-track.** With `autoTrack: true`, the plugin already tracks every matching event. Do **not** also keep a "track" rule or call `track()` manually for the same events, or each event is sent **twice**.
+
+> **Note:** autoTrack works regardless of how the definition was registered (config-time or a later `define()`), because the listener uses the internal tracker. It requires the data-layer handle (`context.acdl`), which is always present in the real library.
 
 ### `define(config)`
 

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-06-18
+
+_Motivation: after 1.8.0 the tracking definition can live in the plugin config, but listening for events and calling `track()` still had to be wired externally — a fragile setup. Because `acdl_helper(config)` initializes asynchronously, external code that listens and calls `acdl_helper.xdmtracker.track(...)` can run before the global API exists (the ACDL replays queued events at registration time), throwing `Cannot read properties of undefined (reading 'track')`; and some Launch "all events" triggers stop firing after the initial burst, silently losing interactions. This release lets the plugin own the listener so a project needs nothing beyond `acdl_helper(config)`._
+
+### Added
+
+- **xdmtracker: `autoTrack` config flag** — when `plugins.xdmtracker.autoTrack: true`, the plugin registers its own data-layer listener (`adobeDataLayer:event`, `scope: "all"`) during init and tracks every event whose name matches the definition. No separate track rule, no manual listener, no readiness workaround. `scope: "all"` replays events already queued before init (e.g. an early personalization prefetch and the page-load event) and delivers all later interactions, in order, so the render gate (prefetch → unified page view) still holds. The listener calls the plugin's **internal** tracker, so it never depends on the global `acdl_helper.xdmtracker` API existing yet — eliminating the init-timing race by construction. Default `false`; existing setups are unchanged. The plugin wraps each raw listener event as `{ message, $type }` so the core `catch()` (which requires a `$type` containing `"adobe-client-data-layer"`, normally added only by Adobe Launch) resolves component state — otherwise component-derived eVars/props would be blank.
+- **Tests** — autoTrack registers a single `scope:"all"` listener; emitted events are tracked; component-derived resolvers resolve (proving the `$type` wrapping); `autoTrack` unset registers no listener; the render gate holds across a replayed prefetch → page view; autoTrack also tracks definitions supplied via a later `define()` (`tests/autotrack.test.js`).
+- **README (xdmtracker): "autoTrack — self-registered tracking"** — the config flag, replay behavior, and the double-track warning.
+
+### Changed
+
+- **xdmtracker `track()`** — refactored to delegate to an internal `track_impl()` shared with the autoTrack listener. Public behavior unchanged.
+
 ## [1.8.0] - 2026-06-18
 
 _Motivation: when a project uses `xdmtracker` together with the `page` plugin, an initialization-ordering race could drop the page view. `acdl_helper(config)` initializes asynchronously, so integrators had to call `xdmtracker.define(...)` from a separate Adobe Tags action — and the `page` plugin emits its page-load event on a `setTimeout(0)` macrotask that can fire **before** that separate `define()` runs, so `track('…:page:load')` ran while the tracker was undefined and the event was dropped. The only workaround was hand-gating `page:load` via `page_load_dependencies` plus a marker event. This release lets the tracking definition be registered at init time, removing the race for all event sources._

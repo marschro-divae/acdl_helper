@@ -98,6 +98,84 @@ export default function xdmtracker() {
       return true
     }
 
+    /**
+     * Internal tracker: resolve component state, build the XDM payload, and send
+     * via alloy(), honoring the render gate. Shared by the public track() method
+     * and the autoTrack listener below, so autoTrack never depends on the global
+     * `acdl_helper.xdmtracker` API existing yet (no init-timing race).
+     */
+    function track_impl(event, send_opts) {
+      if (!_defined) {
+        context.logger.error("xdmtracker not defined — call define() first")
+        return
+      }
+
+      // 1. Extract event name → definition lookup key
+      const event_name = event?.message?.event
+      if (!event_name) {
+        context.logger.error("Cannot resolve event name from event.message.event")
+        return
+      }
+
+      // 2. Look up definition
+      const def = _definition[event_name]
+      if (!def) {
+        context.logger.info('No definition for event "' + event_name + '"')
+        return
+      }
+
+      // 3. Extract component state via catch
+      const caught = context.catch(event)
+      const cmp = (caught && caught.get()) || {}
+
+      // 4. Build payload (defaults are merged as base layer, event def overlays on top)
+      const payload = build_payload(event_name, def, cmp, send_opts || {}, _defaults, context.logger)
+
+      context.logger.info("prepared payload", payload)
+
+      // Local sender: perform the alloy call, returning its promise (or undefined).
+      const send = () => {
+        try {
+          if (typeof window.alloy !== "function") {
+            context.logger.error("alloy() is not available")
+            return undefined
+          }
+          return window.alloy("sendEvent", payload)
+        } catch (err) {
+          context.logger.error("sendEvent failed:", err, payload)
+          return undefined
+        }
+      }
+
+      // 5. Send via alloy, honoring the render gate.
+      const renders = payload.renderDecisions === true
+      const awaits_render = !!(def.personalization && def.personalization.includeRenderedPropositions)
+
+      if (renders) {
+        // Triggers rendering — capture a settle signal so a later page view can
+        // wait for it. Normalized via then(noop, noop): resolves on success OR
+        // error, and prevents unhandled rejections.
+        const p = send()
+        _render_gate = p && typeof p.then === "function" ? p.then(noop, noop) : null
+      } else if (awaits_render && _render_gate) {
+        // Defer until the prior render settles so its rendered propositions can be
+        // folded in — but never hang: a timeout fallback always fires the send.
+        const gate = _render_gate
+        _render_gate = null // one-shot
+        const ms =
+          def.gateTimeout != null
+            ? def.gateTimeout
+            : send_opts && send_opts.gateTimeout != null
+            ? send_opts.gateTimeout
+            : GATE_TIMEOUT_MS
+        Promise.race([gate, timeout(ms)]).then(send)
+      } else {
+        send()
+      }
+
+      return payload
+    }
+
     // Config-time definition: if the plugin config carries a tracking definition
     // (events and/or defaults), register it now — during provider() setup, which
     // runs synchronously as part of init_plugins, before any plugin event handler
@@ -106,6 +184,29 @@ export default function xdmtracker() {
     // A later define() still overrides this (load_definition warns on overwrite).
     if (context.config && (context.config.events != null || context.config.defaults != null)) {
       load_definition({ events: context.config.events, defaults: context.config.defaults }, "config")
+    }
+
+    // autoTrack: self-register a single data-layer listener so the plugin tracks
+    // every matching event itself — no external track rule, no manual listener, no
+    // readiness workaround. Registered here (synchronously, during init_plugins,
+    // before the page plugin's cmp:show handler is even registered) and driven by
+    // the *internal* track_impl, so it can never race the global API.
+    //
+    // scope:"all" replays already-queued events (e.g. an early prefetch) AND
+    // delivers all future ones, in chronological order — same mechanism the page
+    // plugin uses for page_load_dependencies.
+    //
+    // A raw data-layer listener event carries `event`/`eventInfo` at the top level
+    // and, unlike an Adobe Launch rule event, has no `$type`. We wrap it as
+    // { message, $type } so track_impl sees event.message.event/eventInfo AND the
+    // core catch() (event_catcher.is_dl_event) accepts it — otherwise component
+    // state would resolve empty. (Guarded on context.acdl so unit tests that build
+    // the provider with a minimal context are unaffected.)
+    if (context.config && context.config.autoTrack && context.acdl) {
+      const auto_handler = acdl_event =>
+        track_impl({ message: acdl_event, $type: "adobe-client-data-layer:event" })
+      context.acdl.add_event_listener("adobeDataLayer:event", auto_handler, { scope: "all" })
+      context.logger.success("autoTrack enabled — tracking all defined data-layer events automatically")
     }
 
     return Object.freeze({
@@ -145,75 +246,7 @@ export default function xdmtracker() {
        *   the render gate active, the actual alloy send may happen asynchronously after return.
        */
       track(event, send_opts) {
-        if (!_defined) {
-          context.logger.error("xdmtracker not defined — call define() first")
-          return
-        }
-
-        // 1. Extract event name → definition lookup key
-        const event_name = event?.message?.event
-        if (!event_name) {
-          context.logger.error("Cannot resolve event name from event.message.event")
-          return
-        }
-
-        // 2. Look up definition
-        const def = _definition[event_name]
-        if (!def) {
-          context.logger.info('No definition for event "' + event_name + '"')
-          return
-        }
-
-        // 3. Extract component state via catch
-        const caught = context.catch(event)
-        const cmp = (caught && caught.get()) || {}
-
-        // 4. Build payload (defaults are merged as base layer, event def overlays on top)
-        const payload = build_payload(event_name, def, cmp, send_opts || {}, _defaults, context.logger)
-
-        context.logger.info("prepared payload", payload)
-
-        // Local sender: perform the alloy call, returning its promise (or undefined).
-        const send = () => {
-          try {
-            if (typeof window.alloy !== "function") {
-              context.logger.error("alloy() is not available")
-              return undefined
-            }
-            return window.alloy("sendEvent", payload)
-          } catch (err) {
-            context.logger.error("sendEvent failed:", err, payload)
-            return undefined
-          }
-        }
-
-        // 5. Send via alloy, honoring the render gate.
-        const renders = payload.renderDecisions === true
-        const awaits_render = !!(def.personalization && def.personalization.includeRenderedPropositions)
-
-        if (renders) {
-          // Triggers rendering — capture a settle signal so a later page view can
-          // wait for it. Normalized via then(noop, noop): resolves on success OR
-          // error, and prevents unhandled rejections.
-          const p = send()
-          _render_gate = p && typeof p.then === "function" ? p.then(noop, noop) : null
-        } else if (awaits_render && _render_gate) {
-          // Defer until the prior render settles so its rendered propositions can be
-          // folded in — but never hang: a timeout fallback always fires the send.
-          const gate = _render_gate
-          _render_gate = null // one-shot
-          const ms =
-            def.gateTimeout != null
-              ? def.gateTimeout
-              : send_opts && send_opts.gateTimeout != null
-              ? send_opts.gateTimeout
-              : GATE_TIMEOUT_MS
-          Promise.race([gate, timeout(ms)]).then(send)
-        } else {
-          send()
-        }
-
-        return payload
+        return track_impl(event, send_opts)
       },
     })
   }
