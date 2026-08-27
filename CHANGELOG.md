@@ -19,6 +19,8 @@ _Motivation: a project must send its tracking to **two different Adobe Orgs** �
 
 ### Fixed
 
+- **`event_path_for("event0")` misfiled instead of rejecting.** `"event0"` matches `/^event(\d+)$/` but is not a valid Adobe Analytics event; it resolved to `_experience.analytics.event101to200.event0` because the lower bound lived *inside* the first bucket check (`n >= 1 && n <= 100`) — for `n = 0` that check failed and the `n <= 200` bucket then matched. The bound is now checked first, so sub-1 indices return `null` and `coerce_events_into_xdm` warns (`unknown event`) instead of writing a bogus XDM path. Pre-existing and latent — no valid config emits `event0`.
+- **`events: ["event48="]` counted 0 instead of 1.** An event with an `=` but no value ("no value given") silently produced `{ value: 0 }`: `to_number_or()` only falls back when the number is not finite, and `Number("")` is `0`, which *is* finite, so the fallback was never reached. The empty form (and a whitespace-only one) now counts **1**, exactly like the bare `"event48"`. An **explicit** `"event48=0"` — and the object form `{ event48: 0 }` — still yield `0`. Pre-existing since the AA mapping was introduced; only reachable from a malformed definition, which is why no report was affected.
 - **`normalize_targets` logged a spurious error for a plugin with no config.** `config && config.targets` evaluates to `null` (not `undefined`) when `config` itself is null, which tripped the "config.targets must be an object" error path. Now the key is only read from an actual config object. Found by adding direct unit tests for the module.
 
 ### Changed

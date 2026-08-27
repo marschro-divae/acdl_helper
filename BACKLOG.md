@@ -22,8 +22,7 @@ Sections:
 
 ## BUGS
 
-- **`aa-mapping.js` empty explicit event value.** `events: ["event49="]` yields `{ value: 0 }` instead of the intended `1`: `to_number_or` only falls back when the number is not finite, and `Number("")` is `0`, which is finite. `"event49=abc"` (NaN) correctly falls back to 1. Only reachable from a malformed definition, and a characterization test now locks the current behavior — update it when fixing.
-- **`aa-mapping.js` `event_path_for("event0")`** returns `_experience.analytics.event101to200.event0` instead of `null` (the `n >= 1` lower bound is bypassed by the `n <= 200` bucket check). Harmless today — no valid config emits `event0` — but it should return `null`. A characterization test currently locks the quirky behavior; update it when fixing.
+- _(no known open bugs)_
 
 ## CHORES
 

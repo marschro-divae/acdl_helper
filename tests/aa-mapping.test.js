@@ -22,12 +22,22 @@ test("event_path_for returns null for out-of-range or malformed names", () => {
   assert.equal(event_path_for("foo"), null)
 })
 
-// Characterization of a known latent quirk: "event0" matches /^event(\d+)$/ and,
-// because the n>=1 guard fails before the n<=200 bucket, it currently resolves to
-// event101to200.event0 instead of null. Locked here so we notice if it ever changes.
-// (Not fixed in 1.7.0 — out of scope; "event0" is never produced by valid configs.)
-test("event_path_for('event0') — current quirky mapping is preserved", () => {
-  assert.equal(event_path_for("event0"), "_experience.analytics.event101to200.event0")
+// "event0" matches /^event(\d+)$/ but is not a valid Adobe Analytics event. Until 1.10.0
+// it resolved to event101to200.event0: the lower bound lived inside the first bucket check
+// ("n >= 1 && n <= 100"), so for n = 0 that check failed and the n <= 200 bucket matched.
+test("event_path_for rejects event0 and any other sub-1 index", () => {
+  assert.equal(event_path_for("event0"), null)
+  assert.equal(event_path_for("event00"), null)
+})
+
+test("coerce_events_into_xdm warns on event0 instead of misfiling it", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, ["event0", { event0: 5 }, "event1"], {}, logger)
+
+  assert.deepEqual(xdm, { _experience: { analytics: { event1to100: { event1: { value: 1 } } } } })
+  assert.equal(logger.calls.warning.length, 2, "both forms warn")
+  assert.ok(logger.calls.warning.every(a => String(a[0]).includes("unknown event")))
 })
 
 test("coerce_events_into_xdm: string, explicit value, object and null-skip forms", () => {
@@ -148,17 +158,31 @@ test("event_path_for covers every 100-bucket and its boundaries", () => {
   assert.equal(event_path_for("event1001"), null, "out of range")
 })
 
-test("a non-numeric explicit event value falls back to 1 — but an EMPTY one yields 0", () => {
+test("a non-numeric or empty explicit event value falls back to 1", () => {
   const xdm = {},
     logger = make_logger()
-  coerce_events_into_xdm(xdm, ["event48=abc", "event49="], {}, logger)
+  coerce_events_into_xdm(xdm, ["event48=abc", "event49=", "event50= ", "event51"], {}, logger)
 
-  // Characterization of a quirk: to_number_or() falls back only when the value is not
-  // finite. "abc" → NaN → 1, but "" → Number("") → 0, which IS finite, so the empty
-  // form counts 0 rather than the intended 1. Both are malformed definitions; see the
-  // BUGS entry in BACKLOG.md.
+  // "abc" → NaN → fallback. "" and " " mean "no value given" → 1, exactly like the bare
+  // "event51" form. (Before 1.10.0 the empty form counted 0: Number("") is 0, which IS
+  // finite, so to_number_or() never reached its fallback.)
   assert.deepEqual(xdm._experience.analytics.event1to100, {
     event48: { value: 1 },
+    event49: { value: 1 },
+    event50: { value: 1 },
+    event51: { value: 1 },
+  })
+})
+
+test("an EXPLICIT zero is preserved — it is not treated as a missing value", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, ["event48=0", { event49: 0 }], {}, logger)
+
+  // Both forms keep an explicit 0. Only an ABSENT value (bare "event51", or the empty
+  // "event49=" form, or a resolver returning null) falls back to 1.
+  assert.deepEqual(xdm._experience.analytics.event1to100, {
+    event48: { value: 0 },
     event49: { value: 0 },
   })
 })

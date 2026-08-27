@@ -20,7 +20,11 @@ export function event_path_for(name) {
   var m = /^event(\d+)$/.exec(name)
   if (!m) return null
   var n = parseInt(m[1], 10)
-  if (n >= 1 && n <= 100) return "_experience.analytics.event1to100.event" + n
+  // Lower bound FIRST. Folding it into the first bucket check ("n >= 1 && n <= 100")
+  // does not work: for n = 0 that check fails and the next one (n <= 200) then matches,
+  // so "event0" used to resolve to event101to200.event0 instead of null.
+  if (n < 1) return null
+  if (n <= 100) return "_experience.analytics.event1to100.event" + n
   if (n <= 200) return "_experience.analytics.event101to200.event" + n
   if (n <= 300) return "_experience.analytics.event201to300.event" + n
   if (n <= 400) return "_experience.analytics.event301to400.event" + n
@@ -55,14 +59,19 @@ export function coerce_events_into_xdm(xdm, events, cmp, logger) {
     if (typeof e === "string") {
       var idx = e.indexOf("="),
         name = idx >= 0 ? e.slice(0, idx).trim() : e.trim(),
-        raw = idx >= 0 ? e.slice(idx + 1) : undefined,
+        raw = idx >= 0 ? e.slice(idx + 1).trim() : undefined,
         path = event_path_for(name)
 
       if (!path) {
         logger.warning("unknown event:", e)
         continue
       }
-      set_event(path, raw != null ? raw : 1)
+      // An EMPTY value ("event48=" / "event48= ") means no value was given, so it counts
+      // 1 — exactly like "event48". Testing truthiness rather than != null matters here:
+      // Number("") is 0 and 0 IS finite, so to_number_or() would never reach its fallback
+      // and the event would silently count 0. An explicit "0" is a non-empty string and
+      // therefore still yields 0.
+      set_event(path, raw ? raw : 1)
       continue
     }
 
