@@ -11,8 +11,8 @@
 - Entry `src/core/index.js` → webpack builds to `dist/acdl_helper.js`. `dist/` is gitignored.
 - Plugins: `src/plugins/{name}/index.js`, loaded dynamically. A plugin default-exports a function returning `{ meta, impl(context) }` with `init`, optional `handle_event`, optional `provider`. Context gives `logger`, `config`, `event_prefix`, `acdl`, `catch`, `shared`.
 - `__VERSION__` is injected from `package.json` `version` at build time. `package.json` `version` also feeds the Maven/CRX build (`npm_package_version`).
-- Node ≥ 23 (see `.nvmrc`). Build needs Java 11 + Maven only for the CRX bundle.
-- Build artifacts that ARE committed: `release/{version}/` (served via jsDelivr CDN) and `crx-package/{version}.zip` (AEM content package). Only `dist/` is gitignored.
+- Node ≥ 23 (see `.nvmrc`). Build needs a JDK + Maven only for the CRX bundle: **Java 11 or newer** — verified on **21** (1.10.0). The `pom.xml` has no `maven-compiler-plugin` and compiles no Java (it only runs `filevault-package` to zip `jcr_root`), so the JDK version is not constrained by the build itself.
+- Build artifacts that ARE committed: `release/{version}/` (served via jsDelivr CDN) and `crx-package/acdl_helper-{version}.zip` (AEM content package). Only `dist/` is gitignored.
 
 ## Adobe documentation — verify, don't trust
 Adobe's docs (Experience League) are frequently **outdated, incomplete, or simply wrong**. Do not treat any documented behavior as fact for implementation — **hand-test and confirm the actual behavior** before relying on it (browser network payloads, the Adobe Experience Platform Assurance "Adobe Analytics" view, the real recorded hit, etc.). Budget time for reverse-engineering; the docs are a starting hypothesis, not ground truth.
@@ -42,7 +42,7 @@ For any non-trivial change, follow these steps in order:
 5. **Documentation** — update the relevant plugin `README.md` and the main `README.md`.
 6. **Changelog** — add an entry to `CHANGELOG.md` (Keep-a-Changelog format) and bump `package.json` `version` (semver). **Remove the shipped item from `BACKLOG.md`.**
 7. **Delivery** — build artifacts and commit/push manually:
-   - `npm run build:prod` (→ `dist/`) or `npm run build:crxbundle` (→ `dist/` + `release/{version}/` + `crx-package/{version}.zip`; needs Java 11 + Maven).
-   - Commit source + `tests/` + docs + `CHANGELOG.md` + the built `release/{version}/` and `crx-package/{version}.zip`.
+   - `npm run build:prod` (→ `dist/`) or `npm run build:crxbundle` (→ `dist/` + `release/{version}/` + `crx-package/acdl_helper-{version}.zip`; needs a JDK ≥ 11 + Maven).
+   - Commit source + `tests/` + docs + `CHANGELOG.md` + the built `release/{version}/` and `crx-package/acdl_helper-{version}.zip`.
    - Push to **both** remotes: `Github` and `gitlab_divae`.
 - Commit/push only when the user asks. Default working branch is `develop`.

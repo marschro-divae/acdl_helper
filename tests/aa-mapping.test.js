@@ -77,3 +77,110 @@ test("coerce_kv_array_into_xdm: lists keep non-string values", () => {
 
   assert.deepEqual(xdm._experience.analytics.customDimensions.lists.list2, list_val)
 })
+
+test("coerce_events_into_xdm warns on an unknown key in the OBJECT form", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, [{ event1: 1, notanevent: 2, event1001: 3 }], {}, logger)
+
+  assert.deepEqual(xdm, { _experience: { analytics: { event1to100: { event1: { value: 1 } } } } })
+  assert.equal(logger.calls.warning.length, 2, "both bad keys warn, the valid one still maps")
+  assert.ok(logger.calls.warning.every(a => String(a[0]).includes("unknown event")))
+})
+
+test("coerce_events_into_xdm warns on an unsupported event descriptor", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, [42, true, ["event1"]], {}, logger)
+
+  assert.deepEqual(xdm, {}, "nothing is mapped")
+  assert.equal(logger.calls.warning.length, 3)
+  assert.ok(logger.calls.warning.every(a => String(a[0]).includes("unsupported event descriptor")))
+})
+
+test("coerce_events_into_xdm: a resolver returning an unknown name warns", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, [() => "nope", () => ({ alsonope: 1 })], {}, logger)
+
+  assert.deepEqual(xdm, {})
+  assert.equal(logger.calls.warning.length, 2)
+})
+
+test("coerce_kv_array_into_xdm warns on a non-object item", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_kv_array_into_xdm(
+    xdm,
+    ["notanobject", 42, { eVar1: "kept" }],
+    "_experience.analytics.customDimensions.eVars",
+    {},
+    logger
+  )
+
+  assert.deepEqual(xdm._experience.analytics.customDimensions.eVars, { eVar1: "kept" })
+  assert.equal(logger.calls.warning.length, 2)
+  assert.ok(logger.calls.warning.every(a => String(a[0]).includes("bad kv item")))
+})
+
+test("event_path_for covers every 100-bucket and its boundaries", () => {
+  // A typo in any bucket string would silently misfile events into the wrong AA
+  // variable, so every bucket is asserted explicitly.
+  const cases = [
+    [1, "event1to100"], [100, "event1to100"],
+    [101, "event101to200"], [200, "event101to200"],
+    [201, "event201to300"], [300, "event201to300"],
+    [301, "event301to400"], [400, "event301to400"],
+    [401, "event401to500"], [500, "event401to500"],
+    [501, "event501to600"], [600, "event501to600"],
+    [601, "event601to700"], [700, "event601to700"],
+    [701, "event701to800"], [800, "event701to800"],
+    [801, "event801to900"], [900, "event801to900"],
+    [901, "event901to1000"], [1000, "event901to1000"],
+  ]
+  for (const [n, bucket] of cases) {
+    assert.equal(
+      event_path_for("event" + n),
+      `_experience.analytics.${bucket}.event${n}`,
+      `event${n} must map to ${bucket}`
+    )
+  }
+  assert.equal(event_path_for("event1001"), null, "out of range")
+})
+
+test("a non-numeric explicit event value falls back to 1 — but an EMPTY one yields 0", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, ["event48=abc", "event49="], {}, logger)
+
+  // Characterization of a quirk: to_number_or() falls back only when the value is not
+  // finite. "abc" → NaN → 1, but "" → Number("") → 0, which IS finite, so the empty
+  // form counts 0 rather than the intended 1. Both are malformed definitions; see the
+  // BUGS entry in BACKLOG.md.
+  assert.deepEqual(xdm._experience.analytics.event1to100, {
+    event48: { value: 1 },
+    event49: { value: 0 },
+  })
+})
+
+test("an object-form event resolving to null still counts as 1", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, [{ event48: () => null }, { event49: undefined }], {}, logger)
+
+  assert.deepEqual(xdm._experience.analytics.event1to100, {
+    event48: { value: 1 },
+    event49: { value: 1 },
+  })
+})
+
+test("coerce_* are no-ops when not given an array", () => {
+  const xdm = {},
+    logger = make_logger()
+  coerce_events_into_xdm(xdm, "event1", {}, logger)
+  coerce_events_into_xdm(xdm, undefined, {}, logger)
+  coerce_kv_array_into_xdm(xdm, { eVar1: "x" }, "_experience.analytics.customDimensions.eVars", {}, logger)
+
+  assert.deepEqual(xdm, {}, "nothing mapped, nothing thrown")
+  assert.equal(logger.calls.warning.length, 0)
+})

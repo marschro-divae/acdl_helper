@@ -52,3 +52,24 @@ test("an optional base xdm is layered upon (defaults → event)", () => {
   assert.equal(xdm._experience.analytics.customDimensions.eVars.eVar1, "base")
   assert.equal(xdm._experience.analytics.customDimensions.eVars.eVar2, "evt")
 })
+
+test("a malformed xdm pair warns and is skipped, valid pairs still applied", () => {
+  const logger = make_logger()
+  const xdm = build_xdm(
+    { xdmPairs: [["a.b", 1], ["only-one-element"], "notanarray", [], ["c.d", 2]] },
+    {},
+    logger
+  )
+
+  assert.deepEqual(xdm, { a: { b: 1 }, c: { d: 2 } })
+  assert.equal(logger.calls.warning.length, 3)
+  assert.ok(logger.calls.warning.every(a => String(a[0]).includes("bad xdm pair")))
+})
+
+test("a non-object xdm and a non-array xdmPairs are ignored, not thrown on", () => {
+  const logger = make_logger()
+  const xdm = build_xdm({ xdm: "notanobject", xdmPairs: "notanarray" }, {}, logger)
+
+  assert.deepEqual(xdm, {})
+  assert.equal(logger.calls.warning.length, 0)
+})

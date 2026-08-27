@@ -16,7 +16,13 @@
 5. [Page view vs. link click vs. fetch](#05-page-view-vs-link-click-vs-fetch)
 6. [Personalization & display events](#06-personalization--display-events)
 7. [Custom XDM fields](#07-custom-xdm-fields)
-8. [Module structure](#08-module-structure)
+8. [Multi-org — sending to several Adobe Orgs](#08-multi-org--sending-to-several-adobe-orgs)
+   - [Declaring targets](#declaring-targets)
+   - [Per event: the `targets` key](#per-event-the-targets-key)
+   - [Layering & capabilities](#layering--capabilities)
+   - [Reference](#reference)
+   - [Things to know](#things-to-know)
+9. [Module structure](#09-module-structure)
 
 ---
 
@@ -234,6 +240,7 @@ Where each field lands in the `alloy("sendEvent", payload)` call:
 | `lists`    | Array   | — | XDM list format: `[{ list1: { list: [{ value: "a" }, { value: "b" }] } }]` (see below) |
 | `xdm`      | Object or Array | — | Object for deep merge, or pairs `[["path", value], ...]` |
 | `xdmPairs` | Array   | — | Additional `[["path", value], ...]` pairs merged after `xdm` |
+| `targets`  | Object  | — | Multi-org only: per-target overlay (`{…}`) or `false` to exclude a target — see [§08](#08-multi-org--sending-to-several-adobe-orgs) |
 
 All values can be static or resolver functions `(cmp) => value`.
 
@@ -466,7 +473,199 @@ const definition = {
 
 All values — including nested ones — can be resolver functions `(cmp) => value` that receive the component state.
 
-## 08 Module structure
+## 08 Multi-org — sending to several Adobe Orgs
+
+Some projects must send to **more than one Adobe Org** — for example Org A for classical
+Adobe Analytics and Org B for Customer Journey Analytics. Adobe requires **one Web SDK
+instance per Org** (each with its own unique `orgId` **and** its own unique `datastreamId`,
+otherwise the instances collide on cookies), so multi-org means sending to several named
+globals: `window.alloy`, `window.volkswagen`, …
+
+**The instances themselves are not created by this plugin.** Declare them in the Web SDK
+base code array and configure each one in the Web SDK tag extension (it supports multiple
+instances — "Add instance" plus a name field). The plugin only *sends* to them:
+
+```javascript
+// Web SDK base code — every instance you want must be listed here
+!function(n,o){o.forEach(function(o){n[o]||((n.__alloyNS=n.__alloyNS||
+[]).push(o),n[o]=function(){var u=arguments;return new Promise(
+function(i,l){n.setTimeout(function(){n[o].q.push([i,l,u])})})},n[o].q=[])})}
+(window,["alloy","volkswagen"]);
+```
+
+### Declaring targets
+
+A **target** is a named destination: one Web SDK instance plus its own defaults and options.
+Declare them once in the plugin config:
+
+```javascript
+acdl_helper({
+  plugins: {
+    xdmtracker: {
+      autoTrack: true,
+
+      targets: {
+        aa: { instance: "alloy", primary: true },         // window.alloy      → Org A (AA)
+        cja: {
+          instance: "volkswagen",                         // window.volkswagen → Org B (CJA)
+          useGlobalDefaults: false,                       // skip the AA-shaped global defaults
+          analytics: false,                               // don't inherit eVars/props/lists/events
+          personalization: false,                         // no renderDecisions; skip fetchOnly events
+          defaults: {                                     // this Org's own base layer
+            xdm: { _tenant: { page: { name: () => acdl_helper.page.get("dc:title") } } },
+          },
+        },
+      },
+
+      defaults: { /* unchanged — the global base layer */ },
+      events: { /* unchanged */ },
+    },
+  },
+})
+```
+
+> **Omit `targets` and nothing changes**: the plugin sends to `window.alloy` exactly as
+> before, and `track()` keeps returning the single payload object.
+
+**The idea in one line:** *systematic* differences ("this Org always gets a different
+shape") are declared **once** on the target; an **event** says something only when it is
+genuinely special. So the default is "send the same event to every Org", and the event
+definitions stay clean.
+
+### Per event: the `targets` key
+
+One new event key. Its value per target is either an **object** (an overlay) or **`false`**
+(exclude the target):
+
+```javascript
+events: {
+  // 1. NOTHING — both Orgs, same event, each with its own defaults. The common case.
+  "vw:cta:click": { events: ["event5"], eVars: [{ eVar11: "vw:cta:click" }] },
+
+  // 2. DELTA — both Orgs; CJA gets one field on top. Nothing repeated.
+  "vw:page:load": {
+    pageView: true,
+    events: ["event1"],
+    targets: { cja: { xdm: { _tenant: { page: { type: (cmp) => cmp["dc:type"] } } } } },
+  },
+
+  // 3. REPLACE — CJA gets a genuinely different definition.
+  "vw:configurator:complete": {
+    events: ["event42"],
+    targets: {
+      cja: {
+        extends: false,                                  // ← drop the shared body
+        xdm: { _tenant: { configurator: { model: (cmp) => cmp.model } } },
+      },
+    },
+  },
+
+  // 4. EXCLUDE — never leaves Org A. No sendEvent call to that instance at all.
+  "vw:search:error": { events: ["event2"], targets: { cja: false } },
+
+  // 5. OPT IN — only needed when that target declares optIn: true.
+  "vw:journey:milestone": {
+    xdm: { _tenant: { journey: { milestone: (cmp) => cmp.name } } },
+    targets: { cja: {} },                                // ← "yes, this one too"
+  },
+}
+```
+
+| Event writes | Reaches the target? | Payload |
+|---|---|---|
+| nothing | ✅ (unless `optIn: true`) | shared definition + target defaults |
+| `{ … }` | ✅ | shared definition + target defaults + overlay |
+| `{ extends: false, … }` | ✅ | target defaults + overlay only |
+| `false` | ❌ | — no `sendEvent` call to that instance at all |
+
+> **An overlay never means "only".** `targets: { cja: {…} }` is "add these fields for CJA",
+> not "stop sending to AA" — otherwise adding one CJA field would silently switch off Adobe
+> Analytics for that event. Exclusion is always the explicit `false`.
+
+> A `null`/`0` typo in that slot **warns and is treated as absent** (the target still gets
+> the shared definition) rather than silently dropping an Org's data. An unknown target key
+> warns once when the definition is registered.
+
+### Layering & capabilities
+
+Per target, the payload is built from ordered layers — later layers win **per variable /
+per XDM path**, which is what lets an overlay add a field without replacing the rest:
+
+```
+global defaults → target defaults → shared event body → target overlay
+```
+
+| Layer | Skipped when |
+|---|---|
+| global `defaults` | target has `useGlobalDefaults: false`, or the event is `fetchOnly` |
+| target `defaults` | the event is `fetchOnly` |
+| shared event body | the overlay sets `extends: false` |
+| target overlay | — |
+
+The **capabilities** (`analytics`, `personalization`) filter the **inherited** layers only —
+they never override what an overlay states explicitly:
+
+- `analytics: false` — that target never *inherits* `eVars`/`props`/`lists`/`events`, so no
+  `_experience.analytics.*` is duplicated into a CJA datastream. Custom `xdm`/`xdmPairs` and
+  the event semantics (`pageView`, `eventType`, `webInteraction*`) still apply. An AA field
+  written **directly in that target's overlay** is still sent, with a warning.
+- `personalization: false` — that target never inherits `renderDecisions`/`personalization`,
+  and `fetchOnly` prefetches are skipped for it entirely. An explicit overlay wins, with a
+  warning.
+
+> **Why bother, if the datastream schema drops unexpected fields anyway?** It does — this is
+> payload *hygiene*, not correctness. It still pays for itself: smaller payloads on every
+> hit, no accidental interpretation if that datastream *does* have an Analytics service
+> enabled, nothing transmitted to an Org that should not receive it, and a clean payload per
+> Org when you read the calls in Assurance.
+
+> **`extends: false` drops the shared body wholesale — including its semantics.** If the
+> shared definition had `pageView: true`, that target sends a **link click** unless the
+> overlay sets `pageView` itself. The plugin warns when this happens.
+
+### Reference
+
+**Target config** (`plugins.xdmtracker.targets.<key>`):
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `instance` | String | the target key | The global Web SDK instance to send through (`window[instance]`) |
+| `primary` | Boolean | first declared | Marks the primary target — sent first |
+| `defaults` | Object | — | This target's own base layer (same fields as the global `defaults`) |
+| `useGlobalDefaults` | Boolean | `true` | `false` = ignore the global `defaults` for this target |
+| `analytics` | Boolean | `true` | `false` = never *inherit* AA variable mapping (see above) |
+| `personalization` | Boolean | `true` | `false` = never inherit `renderDecisions`/`personalization`; skip `fetchOnly` events |
+| `optIn` | Boolean | `false` | `true` = receives **only** events whose `targets` overlay names it |
+| `enabled` | Boolean | `true` | Kill switch — the one hard override; an overlay cannot revive it |
+| `datastreamId` | String | — | Target-level datastream override (an event definition still wins) |
+| `edgeConfigOverrides`, `documentUnloading`, `gateTimeout` | — | — | Transport-level [send options](#send-options), applied below the event definition. Per-event *semantics* (`pageView`, `fetchOnly`, `eventType`, `webInteraction*`, `data`) are deliberately **not** settable per target — a target-level default there would silently reshape every event sent to that Org |
+
+**Event definition:**
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `targets.<key>` = `{…}` | Object | — | Overlay: the normal definition fields plus `extends`. Also opts in to an `optIn: true` target (`{}` suffices) |
+| `targets.<key>` = `false` | Boolean | — | Exclusion: not sent to that target |
+| `targets.<key>.extends` | Boolean | `true` | `false` = do not inherit the shared event definition body |
+
+### Things to know
+
+- **`track()`'s return value.** With `targets` configured it returns a **map keyed by
+  target** (`{ aa: payload, cja: payload }`) — an empty `{}` when no target receives the
+  event. Without `targets` it returns the single payload object, exactly as before.
+- **The [render gate](#render-gate-automatic-ordering) is per target.** A render finishing on
+  one instance never gates or releases a page view on another.
+- **`autoTrack` needs no changes** — one listener, *n* sends.
+- **Resolvers run once per target**, so a resolver runs *n* times per event. Keep them pure.
+- **A missing instance errors for that target only** (naming the target key *and* the
+  expected global) and never blocks the other targets' sends. `init()` reports every
+  configured instance that is not a function on `window` — usually a name missing from the
+  base code array.
+- **Each Org has its own ECID** (identity cookies are Org-scoped) and its own consent state.
+  Cross-Org stitching needs an `identityMap` / first-party ID and is a configure-time
+  concern, not something this plugin can do.
+
+## 09 Module structure
 
 ```
 xdmtracker/
@@ -476,5 +675,6 @@ xdmtracker/
     ├── resolve.js     Resolve function values against component state
     ├── aa-mapping.js  event_path_for, coerce_events_into_xdm, coerce_kv_array_into_xdm
     ├── xdm-builder.js merge_xdm_object, apply_xdm_pairs, build_xdm
+    ├── targets.js     normalize_targets, resolve_send_targets, resolve_target_def
     └── payload.js     build_payload (full sendEvent envelope)
 ```

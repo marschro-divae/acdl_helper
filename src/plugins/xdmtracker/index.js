@@ -4,12 +4,22 @@
  * Transforms declarative tracking definitions into Adobe XDM payloads
  * and sends them via alloy("sendEvent", ...).
  *
+ * Sends to one Web SDK instance by default (window.alloy) and to n named instances
+ * when `targets` is configured — one instance per Adobe Org (see lib/targets.js and
+ * DOCS/FEATURES/xdmtracker-multi-org-targets).
+ *
  * Usage:
  *   acdl_helper.xdmtracker.define({ events: {...}, defaults: {...} })
  *   acdl_helper.xdmtracker.track(event)
  *   acdl_helper.xdmtracker.track(event, send_opts)
  */
 import { build_payload } from "./lib/payload.js"
+import {
+  normalize_targets,
+  resolve_send_targets,
+  resolve_target_def,
+  validate_definition_targets,
+} from "./lib/targets.js"
 
 // Default time (ms) a page view waits for a prior personalization render to settle
 // before sending anyway. Guarantees tracking can never hang on a render that
@@ -36,32 +46,54 @@ export default function xdmtracker() {
     meta: Object.freeze(meta),
 
     impl(context) {
+      // Normalized ONCE here (the plugin context is frozen, so it cannot be cached on
+      // it, and impl() creates both closures) — otherwise every config warning would
+      // be logged twice, from init() and from provider().
+      const targets = normalize_targets(context.config, context.logger)
       return {
-        init: init(context),
-        provider: provider(context),
+        init: init(context, targets),
+        provider: provider(context, targets),
       }
     },
   }
 
-  function init(context) {
+  function init(context, targets) {
     return function () {
-      if (typeof window.alloy !== "function") {
-        context.logger.error(
-          "Adobe Web SDK (alloy.js) is missing. Please install the extension via Adobe Data Collection or manually"
-        )
-      }
+      // One error per configured instance that is missing. With multiple Orgs the
+      // base code array is the easiest thing to get wrong (an instance configured in
+      // Launch but absent from ["alloy","volkswagen"], or a name typo), and a silent
+      // no-send to the second Org would only surface months later as an empty report.
+      targets.forEach(target => {
+        if (typeof window[target.instance] !== "function") {
+          context.logger.error(
+            target.implicit
+              ? "Adobe Web SDK (alloy.js) is missing. Please install the extension via Adobe Data Collection or manually"
+              : `Adobe Web SDK instance "${target.instance}" (target "${target.key}") is missing. ` +
+                  "Declare it in the Web SDK base code array and configure it in the Web SDK extension"
+          )
+        }
+      })
     }
   }
 
-  function provider(context) {
+  function provider(context, targets) {
     let _definition = {}
     let _defaults = null
     let _defined = false
-    // Render gate: a promise that settles when the most recent renderDecisions
-    // event has finished rendering. A later event asking for
+    // Render gates, keyed by target: a promise that settles when that target's most
+    // recent renderDecisions event has finished rendering. A later event asking for
     // personalization.includeRenderedPropositions waits on it (one-shot) so the
     // rendered propositions are available to fold into that single hit.
-    let _render_gate = null
+    //
+    // PER TARGET, not global: a render finishing on window.alloy says nothing about
+    // window.volkswagen's render, so one shared gate would let an unrelated Org's
+    // render release — or block — this Org's page view.
+    const _render_gates = {}
+
+    // Declared send targets (one Web SDK instance per Adobe Org). Absent config →
+    // a single implicit "alloy" target, making single-org the n = 1 case of one code path.
+    const _targets = targets
+    const _multi_target = !(_targets.length === 1 && _targets[0].implicit)
 
     /**
      * Validate a tracking definition and store it. Shared by the public
@@ -90,6 +122,9 @@ export default function xdmtracker() {
       _definition = config.events
       _defaults = config.defaults || null
       _defined = true
+      // Report unknown/malformed target overlays once here rather than on every
+      // track() call.
+      validate_definition_targets(_definition, _targets, context.logger)
       context.logger.success(
         `Tracking definition loaded (${Object.keys(_definition).length} event keys, defaults: ${
           _defaults ? "yes" : "no"
@@ -128,43 +163,88 @@ export default function xdmtracker() {
       const caught = context.catch(event)
       const cmp = (caught && caught.get()) || {}
 
-      // 4. Build payload (defaults are merged as base layer, event def overlays on top)
-      const payload = build_payload(event_name, def, cmp, send_opts || {}, _defaults, context.logger)
+      // 4. Resolve which targets receive this event (exclusions, optIn, fetchOnly rules)
+      const sends = resolve_send_targets(def, _targets, context.logger)
+      if (sends.length === 0) {
+        context.logger.info(`No target receives event "${event_name}"`)
+        return _multi_target ? {} : undefined
+      }
 
-      context.logger.info("prepared payload", payload)
+      // 5. Build and send one payload per target.
+      const payloads = {}
+      sends.forEach(({ target, overlay }) => {
+        payloads[target.key] = send_to_target(event_name, def, cmp, send_opts || {}, target, overlay)
+      })
+
+      // Single implicit target → the payload itself (unchanged legacy contract).
+      // Configured targets → a map keyed by target, which is what integrators debug by.
+      return _multi_target ? payloads : payloads[sends[0].target.key]
+    }
+
+    /**
+     * Build the payload for ONE target and send it through that target's Web SDK
+     * instance, honoring that target's render gate. Returns the payload.
+     */
+    function send_to_target(event_name, def, cmp, send_opts, target, overlay) {
+      const tag = _multi_target ? `[${target.key}] ` : ""
+      const { layers, semantics } = resolve_target_def(
+        event_name,
+        def,
+        target,
+        overlay,
+        _defaults,
+        context.logger
+      )
+      // A personalization:false target must not pick up personalization from the
+      // CALL-level send_opts either: build_payload falls back to send_opts whenever the
+      // definition is silent, which would bypass the capability. An explicit overlay
+      // still wins, because it lands in `semantics` and the definition beats send_opts.
+      let effective_send_opts = send_opts
+      if (!target.personalization && (send_opts.renderDecisions != null || send_opts.personalization != null)) {
+        effective_send_opts = Object.assign({}, send_opts)
+        delete effective_send_opts.renderDecisions
+        delete effective_send_opts.personalization
+      }
+
+      const payload = build_payload(event_name, semantics, cmp, effective_send_opts, layers, context.logger)
+
+      context.logger.info(`${tag}prepared payload`, payload)
 
       // Local sender: perform the alloy call, returning its promise (or undefined).
       const send = () => {
         try {
-          if (typeof window.alloy !== "function") {
-            context.logger.error("alloy() is not available")
+          const instance = window[target.instance]
+          if (typeof instance !== "function") {
+            context.logger.error(`${tag}alloy instance "${target.instance}" is not available`)
             return undefined
           }
-          return window.alloy("sendEvent", payload)
+          return instance("sendEvent", payload)
         } catch (err) {
-          context.logger.error("sendEvent failed:", err, payload)
+          context.logger.error(`${tag}sendEvent failed:`, err, payload)
           return undefined
         }
       }
 
-      // 5. Send via alloy, honoring the render gate.
+      // Send, honoring this target's render gate.
       const renders = payload.renderDecisions === true
-      const awaits_render = !!(def.personalization && def.personalization.includeRenderedPropositions)
+      const awaits_render = !!(
+        semantics.personalization && semantics.personalization.includeRenderedPropositions
+      )
 
       if (renders) {
         // Triggers rendering — capture a settle signal so a later page view can
         // wait for it. Normalized via then(noop, noop): resolves on success OR
         // error, and prevents unhandled rejections.
         const p = send()
-        _render_gate = p && typeof p.then === "function" ? p.then(noop, noop) : null
-      } else if (awaits_render && _render_gate) {
+        _render_gates[target.key] = p && typeof p.then === "function" ? p.then(noop, noop) : null
+      } else if (awaits_render && _render_gates[target.key]) {
         // Defer until the prior render settles so its rendered propositions can be
         // folded in — but never hang: a timeout fallback always fires the send.
-        const gate = _render_gate
-        _render_gate = null // one-shot
+        const gate = _render_gates[target.key]
+        _render_gates[target.key] = null // one-shot
         const ms =
-          def.gateTimeout != null
-            ? def.gateTimeout
+          semantics.gateTimeout != null
+            ? semantics.gateTimeout
             : send_opts && send_opts.gateTimeout != null
             ? send_opts.gateTimeout
             : GATE_TIMEOUT_MS

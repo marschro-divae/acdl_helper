@@ -57,7 +57,7 @@ Latest version to be found here: [crx-package releases](/crx-package/)
 - node > v23
 - npm
 - git
-- java 11 (optional, if crx-package should be build)
+- java 11 or newer (optional, if crx-package should be build) — verified on 21
 - maven (optional, if crx-package should be build)
 
 ### 2. Run development environment
@@ -257,3 +257,8 @@ Provided standard plugins are:
 - [user](/src/plugins/user/README.md)
 - [usercentrics](/src/plugins/usercentrics/README.md)
 - [xdmtracker](/src/plugins/xdmtracker/README.md)
+
+> **Multi-org tracking:** `xdmtracker` can send to **several Adobe Orgs** in one page —
+> Adobe requires one Web SDK instance per Org, so the plugin sends to n named instances
+> (`window.alloy`, `window.volkswagen`, …) with per-Org definitions and delta support.
+> See [Multi-org — sending to several Adobe Orgs](/src/plugins/xdmtracker/README.md#08-multi-org--sending-to-several-adobe-orgs).

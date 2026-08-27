@@ -11,13 +11,27 @@ import { build_xdm } from "./xdm-builder.js"
 
 var VALID_INTERACTION_TYPES = ["other", "download", "exit"]
 
-export function build_payload(event_key, def, cmp, send_opts, defaults, logger) {
-  // Two-pass XDM build: defaults first (base layer), then event definition on top (delta).
+export function build_payload(event_key, def, cmp, send_opts, defaults_or_layers, logger) {
+  // XDM is built by layering definition objects, each one overriding the previous per
+  // variable / per XDM path. Two call shapes:
+  //
+  //   - LAYERS (multi-target): an ARRAY of ordered layers, already resolved by
+  //     lib/targets.js (global defaults → target defaults → shared event body → overlay).
+  //     `def` then carries only the semantic/send fields.
+  //   - LEGACY: a single `defaults` OBJECT (or nothing) → normalized to
+  //     [defaults, def]. Keeps every existing direct caller and unit test working.
+  //
   // fetchOnly prefetches skip the defaults: they never reach Adobe Analytics and a
   // personalization decision does not use the AA variables, so the call stays minimal and
   // is not mistaken for a page view when someone inspects the collect payload.
-  var xdm = defaults && def.fetchOnly !== true ? build_xdm(defaults, cmp, logger) : {}
-  xdm = build_xdm(def, cmp, logger, xdm)
+  var layers = Array.isArray(defaults_or_layers)
+    ? defaults_or_layers
+    : defaults_or_layers && def.fetchOnly !== true
+    ? [defaults_or_layers, def]
+    : [def]
+
+  var xdm = {}
+  for (var li = 0; li < layers.length; li++) xdm = build_xdm(layers[li], cmp, logger, xdm)
 
   if (!xdm.web) xdm.web = {}
 

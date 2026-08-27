@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-08-27
+
+_Motivation: a project must send its tracking to **two different Adobe Orgs** — Org A for classical Adobe Analytics, Org B for Customer Journey Analytics — and Adobe requires **one Web SDK instance per Org** (unique `orgId` **and** unique `datastreamId` each, or the instances collide on cookies). The plugin was hard-wired to `window.alloy`, so there was no way to express "send this event to that instance too, with a different payload". The data for the second Org is also shaped differently (tenant XDM field groups instead of AA eVars/props/events) and sometimes only a delta of the first — so per-Org definitions and delta support were both needed. Concept, rejected alternatives and reasoning: [`DOCS/FEATURES/xdmtracker-multi-org-targets/`](DOCS/FEATURES/xdmtracker-multi-org-targets/README.md)._
+
+### Added
+
+- **xdmtracker: multi-org sending via `targets`.** A **target** is a named destination — one Web SDK instance plus its own defaults and options — declared once in the plugin config: `plugins: { xdmtracker: { targets: { aa: { instance: "alloy" }, cja: { instance: "volkswagen", … } } } }`. One ACDL event then produces one `sendEvent` per target, each through its own named global. **Injection stays external**: the instances are declared in the Web SDK base code array and configured in the Web SDK tag extension (which supports multiple instances); the plugin only resolves `window[<instance>]` and sends — it does not load or configure alloy (no runtime dependency, and personalization keeps the extension's early load timing).
+- **One new event key, `targets`** — per target either an **overlay object** or **`false`**. An overlay is a **delta** by default (the shared definition is inherited and the overlay adds/overrides per variable and per XDM path); `extends: false` makes it a **replacement** (the shared event body is dropped, so a differently-shaped CJA payload needs no duplication); `false` means **no `sendEvent` call at all** to that instance. An overlay never implies routing — adding a CJA field can never silently switch off Adobe Analytics for that event.
+- **Target capabilities, declared once instead of per event** — `analytics: false` (never *inherit* `eVars`/`props`/`lists`/`events`, so no `_experience.analytics.*` is duplicated into a CJA datastream), `personalization: false` (never inherit `renderDecisions`/`personalization`; `fetchOnly` prefetches skipped), `useGlobalDefaults: false`, a per-target `defaults` layer, `optIn: true` (allowlist semantics for a curated/staged Org), `enabled: false` (kill switch), plus target-level `datastreamId`/`edgeConfigOverrides`. Capabilities filter the **inherited** layers only — what an overlay states explicitly is always honored, with a warning: the plugin declines to *infer*, it never overrides what was *written*.
+- **Per-target render gates.** The prefetch→page-view render gate is now keyed by target: a render finishing on `window.alloy` never gates or releases a page view on `window.volkswagen`.
+- **`lib/targets.js`** (new, pure) — `normalize_targets`, `validate_definition_targets` (unknown/malformed overlays reported once at definition-load time, not per `track()` call), `resolve_send_targets`, `resolve_target_def`.
+- **Tests** — `tests/multi-org-targets.test.js`: fan-out, primary ordering, delta in both directions, per-target override, `extends: false` (+ the pageView-loss warning), target defaults layering, `false` exclusion asserted on the stub's **call count**, `optIn`, `enabled`, unknown/`null` overlay handling, all capabilities incl. the explicit-overlay-wins cases, target-level `datastreamId`, render-gate isolation and one-shot independence, missing-instance isolation, duplicate-instance warning, malformed-config fallback, and autoTrack fan-out. Plus `tests/single-instance-characterization.test.js`: **frozen** characterization of the v1.9.1 single-instance contract (complete `sendEvent` envelopes for page view / link click / `fetchOnly`, `track()`'s single-object return, `window.alloy` as the only global touched, resolvers evaluated exactly once, `init()` error).
+- **Test coverage: 100% lines / 100% functions / 97.7% branches** across the plugin (`node --test --experimental-test-coverage`). Beyond the feature suites, this closed pre-existing gaps in the malformed-definition paths: all ten `event_path_for` 100-buckets and their boundaries (a typo in a bucket string would silently misfile events), object-form unknown event keys, unsupported event descriptors, non-object kv items, malformed `xdm` pairs, non-array/non-object early returns, `define()`'s three input validations, and a new `tests/paths.test.js` + `tests/targets.test.js` for the pure utilities. The 8 residual branches are `hasOwnProperty` guards and type guards in module-private functions — unreachable without prototype pollution or exporting internals purely for the metric.
+- **Docs** — plugin `README.md` §08 "Multi-org — sending to several Adobe Orgs" (base code, targets, the five per-event shapes, layering, capabilities, reference tables, caveats) and a pointer in the main `README.md`.
+
+### Fixed
+
+- **`normalize_targets` logged a spurious error for a plugin with no config.** `config && config.targets` evaluates to `null` (not `undefined`) when `config` itself is null, which tripped the "config.targets must be an object" error path. Now the key is only read from an actual config object. Found by adding direct unit tests for the module.
+
+### Changed
+
+- **xdmtracker `track()`** — fans out over the resolved targets. With `targets` configured it returns a **map keyed by target** (`{ aa: payload, cja: payload }`, `{}` when no target receives the event); **without** `targets` it returns the single payload object exactly as before.
+- **`build_payload`** — its 5th parameter now also accepts an **array of ordered XDM layers** (global defaults → target defaults → shared event body → overlay). The legacy single-`defaults`-object form is normalized internally, so existing callers and unit tests are unaffected.
+- **`init()`** — checks **every** configured instance and logs one error per missing global, naming the target key and the expected global (a name absent from the base code array is the likeliest integration mistake). The single-target message is unchanged.
+- **Logging** — payload logs are tagged with the target key (`[cja] prepared payload`) when targets are configured; untagged in single-target mode.
+
+### Backward compatibility
+
+Fully backward compatible: with no `targets` in the plugin config the plugin behaves **byte-identically** to 1.9.1 — one implicit `alloy` target, one payload, unchanged `track()` return value, unchanged `define()`/config-time definition shape, unchanged `autoTrack`. Multi-target is the *n* > 1 case of the same code path, so there are not two behaviors to drift apart, and the frozen characterization suite fails CI if the single-org contract breaks.
+
 ## [1.9.1] - 2026-06-18
 
 ### Fixed

@@ -118,6 +118,38 @@ test("a later define() overrides the config-time definition (with warning)", () 
   assert.equal(sent[0].xdm._experience.analytics.customDimensions.eVars.eVar11, "from-define")
 })
 
+test("define() rejects a non-object config and defines nothing", () => {
+  const { api, track, sent, logger } = setup()
+
+  api.define(null)
+  api.define("nope")
+  api.define(["events"])
+
+  assert.equal(logger.calls.error.length, 3)
+  assert.ok(logger.calls.error.every(a => String(a[0]).includes("expects a config object")))
+  track("whatever")
+  assert.equal(sent.length, 0, "still undefined → nothing sent")
+})
+
+test("define() rejects a config whose events is missing or not an object", () => {
+  const { api, logger } = setup()
+
+  api.define({})
+  api.define({ events: [] })
+  api.define({ events: "x" })
+
+  assert.equal(logger.calls.error.length, 3)
+  assert.ok(logger.calls.error.every(a => String(a[0]).includes("requires config.events")))
+})
+
+test("define() rejects a non-object defaults", () => {
+  const { api, logger } = setup()
+
+  api.define({ events: {}, defaults: [] })
+
+  assert.ok(logger.calls.error.some(a => String(a[0]).includes("defaults must be an object")))
+})
+
 test("config with only defaults (no events) is rejected — events are required", () => {
   const { track, sent, logger } = setup({ defaults: { eVars: [{ eVar1: "x" }] } })
   // No valid definition was stored → track() reports not-defined.
