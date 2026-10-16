@@ -1,5 +1,12 @@
-import * as STATICS from "./statics"
-import utils from "./utils"
+import * as STATICS from "./statics.js"
+import utils from "./utils.js"
+import { matches } from "./match.js"
+import { link_type, family } from "./link.js"
+import { resolve_node } from "./resolve_node.js"
+
+// Pure core functions every plugin gets via `context.helpers` — no configuration of their own: plugins pass
+// theirs in (e.g. `link_type(url, { partner_hosts })`).
+const HELPERS = Object.freeze({ matches, link_type, family, resolve_node })
 
 export default {
   load_plugins,
@@ -70,43 +77,57 @@ async function load_plugins(app) {
  * - If the plugins need more context, this is a good place to handle it
  * - Currently, we provide the logger, the plugins config, an event-prefix and the acdl helper functions
  * - and a shared object space, to be used by plugins and to make it available to the greater context
+ * - Each plugin is initialised in isolation: if one fails (missing impl()/init(), or impl()/init()/provider()
+ *   throws), it is logged and removed — the other plugins and the API still come up. This runs inside the
+ *   dependency-resolved ACDL listener; an uncaught error here used to leave `window.acdl_helper` without an
+ *   API and every plugin (e.g. `page`) dead.
  *
  */
-function init_plugins(plugins, event_prefix, catcher) {
+function init_plugins(plugins, event_prefix, catcher, logger = utils.logger(STATICS.LOG_PREFIX)) {
   Object.keys(plugins).forEach((plugin_key) => {
-    // 1. Check if the plugin correctly provides the impl() function
-    if (!utils.is_function(plugins[plugin_key].impl)) {
-      throw Error(utils.message(`Plugin "${plugin_key}" does not implement function impl()`).as_error)
-    }
-
-    // 2. Create a context for the plugin
-    const context = Object.freeze({
-      logger: utils.logger(`[${STATICS.LOG_PLUGIN_PREFIX}: ${plugin_key}]`),
-      config: plugins[plugin_key].config,
-      event_prefix: `${event_prefix}:${plugin_key}`,
-      acdl: utils.acdl,
-      catch: catcher,
-      shared: {},
-    })
-
-    // 3. Invoke the impl() function of the plugin with the context
-    plugins[plugin_key].impl = plugins[plugin_key].impl(context)
-
-    // 4. Check if the plugin implements the init() function
-    if (!utils.is_function(plugins[plugin_key].impl.init)) {
-      throw Error(utils.message(`Plugin "${plugin_key}" does not implement function init()`).as_error)
-    }
-
-    // 5. Call the init() function of the plugin
-    plugins[plugin_key].impl.init()
-
-    // 6. Check if the plugin provides optional provider functions. If so, invoke it with context
-    if (utils.is_function(plugins[plugin_key].impl.provider)) {
-      plugins[plugin_key].impl.provider = plugins[plugin_key].impl.provider(context)
+    try {
+      init_plugin(plugins, plugin_key, event_prefix, catcher)
+    } catch (err) {
+      logger.error(`Plugin "${plugin_key}" failed to initialize and is disabled`, err)
+      delete plugins[plugin_key]
     }
   })
 
   return plugins
+}
+
+function init_plugin(plugins, plugin_key, event_prefix, catcher) {
+  // 1. Check if the plugin correctly provides the impl() function
+  if (!utils.is_function(plugins[plugin_key].impl)) {
+    throw Error(utils.message(`Plugin "${plugin_key}" does not implement function impl()`).as_error)
+  }
+
+  // 2. Create a context for the plugin
+  const context = Object.freeze({
+    logger: utils.logger(`[${STATICS.LOG_PLUGIN_PREFIX}: ${plugin_key}]`),
+    config: plugins[plugin_key].config,
+    event_prefix: `${event_prefix}:${plugin_key}`,
+    acdl: utils.acdl,
+    catch: catcher,
+    shared: {},
+    helpers: HELPERS,
+  })
+
+  // 3. Invoke the impl() function of the plugin with the context
+  plugins[plugin_key].impl = plugins[plugin_key].impl(context)
+
+  // 4. Check if the plugin implements the init() function
+  if (!utils.is_function(plugins[plugin_key].impl.init)) {
+    throw Error(utils.message(`Plugin "${plugin_key}" does not implement function init()`).as_error)
+  }
+
+  // 5. Call the init() function of the plugin
+  plugins[plugin_key].impl.init()
+
+  // 6. Check if the plugin provides optional provider functions. If so, invoke it with context
+  if (utils.is_function(plugins[plugin_key].impl.provider)) {
+    plugins[plugin_key].impl.provider = plugins[plugin_key].impl.provider(context)
+  }
 }
 
 /**

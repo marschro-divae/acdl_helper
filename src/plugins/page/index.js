@@ -1,6 +1,6 @@
-import get_component_data from "./lib/get_component_data"
-import page_builder from "./lib/page_builder"
-import utils from "./lib/utils"
+import get_component_data from "./lib/get_component_data.js"
+import page_builder from "./lib/page_builder.js"
+import utils from "./lib/utils.js"
 
 /**
  * GENERAL PLUGIN ARCHITECTURE

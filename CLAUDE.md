@@ -9,7 +9,7 @@
 ## Repo knowledge
 - **ES Modules** project (`"type": "module"`), **no Babel** — modern JS only. **No runtime dependencies**.
 - Entry `src/core/index.js` → webpack builds to `dist/acdl_helper.js`. `dist/` is gitignored.
-- Plugins: `src/plugins/{name}/index.js`, loaded dynamically. A plugin default-exports a function returning `{ meta, impl(context) }` with `init`, optional `handle_event`, optional `provider`. Context gives `logger`, `config`, `event_prefix`, `acdl`, `catch`, `shared`.
+- Plugins: `src/plugins/{name}/index.js`, loaded dynamically. A plugin default-exports a function returning `{ meta, impl(context) }` with `init`, optional `handle_event`, optional `provider`. Context gives `logger`, `config`, `event_prefix`, `acdl` (incl. `subscribe`), `catch`, `shared`, `helpers` (pure core functions: `matches`, `resolve_node`, `link_type`, `family`). Plugins are initialised in isolation; listeners registered through `acdl` are guarded.
 - `__VERSION__` is injected from `package.json` `version` at build time. `package.json` `version` also feeds the Maven/CRX build (`npm_package_version`).
 - Node ≥ 23 (see `.nvmrc`). Build needs a JDK + Maven only for the CRX bundle: **Java 11 or newer** — verified on **21** (1.10.0). The `pom.xml` has no `maven-compiler-plugin` and compiles no Java (it only runs `filevault-package` to zip `jcr_root`), so the JDK version is not constrained by the build itself.
 - Build artifacts that ARE committed: `release/{version}/` (served via jsDelivr CDN) and `crx-package/acdl_helper-{version}.zip` (AEM content package). Only `dist/` is gitignored.

@@ -1,10 +1,10 @@
-import plugin_utils from "./lib/plugin_utils"
-import event_catcher from "./lib/event_catcher"
-import utils from "./lib/utils"
+import plugin_utils from "./lib/plugin_utils.js"
+import event_catcher from "./lib/event_catcher.js"
+import utils from "./lib/utils.js"
 
 export default function acdl_helper(app) {
   const catcher = event_catcher(app)
-  app.plugins = plugin_utils.init_plugins(app.plugins, app.config.event_prefix, catcher)
+  app.plugins = plugin_utils.init_plugins(app.plugins, app.config.event_prefix, catcher, app.logger)
   plugin_utils.register_plugin_event_handler(app)
 
   app.logger.success("acdl_helper library initialized... API now available")

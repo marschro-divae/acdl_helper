@@ -1,5 +1,5 @@
-import setup_clickables from "./lib/setup_clickables"
-import utils from "./lib/utils"
+import setup_clickables from "./lib/setup_clickables.js"
+import utils from "./lib/utils.js"
 /**
  * GENERAL PLUGIN ARCHITECTURE
  *

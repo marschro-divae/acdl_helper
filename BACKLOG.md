@@ -22,9 +22,10 @@ Sections:
 
 ## BUGS
 
-- _(no known open bugs)_
+- **`catch(event).get()` throws a `TypeError` on non-ACDL events** (`get` is `undefined`); the README promises only a warning. Fix with the resolver migration below (1.12.0). Found in the jentis review: [DOCS/FEATURES/jentis-bridge §7.3](DOCS/FEATURES/jentis-bridge/README.md) point 14.
 
 ## CHORES
 
+- **1.12.0: migrate existing users onto the 1.11.0 core parts** — `event_catcher` / `catch`, `page` (matcher + resolver) and `xdmtracker` (resolver, `subscribe`, drop the `$type` shim), `register_plugin_event_handler` onto `subscribe`; then rename or really share `context.shared` and replace the five `update_object` copies (core, `page`, `cleanup`, `user`, `usercentrics`). Characterization tests first. Plan: [DOCS/FEATURES/jentis-bridge §8 follow-up](DOCS/FEATURES/jentis-bridge/README.md).
 - **CI**: run `npm test` automatically on push / merge request (GitLab + GitHub).
 - **.gitignore**: ignore Web Debugger / Assurance `*.json` exports so they can't be committed accidentally.

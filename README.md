@@ -187,7 +187,8 @@ See also: [Example Adobe Data Collection Property](https://experience.adobe.com/
 
 - `dependencies`
 
-  - default: **['launch:loaded']**
+  - default: **[]** (initialise right away; with Adobe Tags typically `["launch:loaded"]`, with Core Components
+    `["cmp:loaded"]`)
   - description: Array of events that should all be received, before initialization
   - remark: Setting this, completely overrides the default (no merge)
 
@@ -248,11 +249,20 @@ acdl_helper.page.get() // example for a provided function of the 'page' plugin
 Plugins that provide functionalities are available in their namespace (plugin identifier).  
 Usage and documentation on plugins is found in the plugin documentation.
 
+**Writing a plugin:** start from [`src/plugins/_template`](/src/plugins/_template/index.js). `impl(context)` gets
+`logger`, `config`, `event_prefix`, `shared`, `catch`, `acdl` (`push`, `add_event_listener`,
+`remove_event_listener`, `get_state`, and — since 1.11.0 — `subscribe(event, handler, options)`: registers after
+the current dispatch, returns `unsubscribe()`) and — since 1.11.0 — `helpers` (pure functions: `matches`,
+`resolve_node`, `link_type`, `family`). Every listener registered through `acdl` is guarded: an exception in it
+is logged, never thrown into the code that pushed. A plugin that fails during `impl()` / `init()` is logged and
+disabled; the others keep running.
+
 Provided standard plugins are:
 
 - [cleanup](/src/plugins/cleanup/README.md)
 - [clickables](/src/plugins/clickables/README.md)
 - [component](/src/plugins/component/README.md)
+- [jentis](/src/plugins/jentis/README.md) — bridges data layer events to the JENTIS tag manager (`_jts`) — since 1.11.0
 - [page](/src/plugins/page/README.md)
 - [user](/src/plugins/user/README.md)
 - [usercentrics](/src/plugins/usercentrics/README.md)

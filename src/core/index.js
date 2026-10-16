@@ -1,9 +1,9 @@
-import acdl_helper from "./acdl_helper"
-import events from "./lib/events"
-import default_config from "./config.default"
-import * as STATICS from "./lib/statics"
-import utils from "./lib/utils"
-import plug from "./lib/plugin_utils"
+import acdl_helper from "./acdl_helper.js"
+import events from "./lib/events.js"
+import default_config from "./config.default.js"
+import * as STATICS from "./lib/statics.js"
+import utils from "./lib/utils.js"
+import plug from "./lib/plugin_utils.js"
 ;(function () {
   utils.acdl.push({ event: "acdl_helper:loaded" })
 

@@ -1,6 +1,6 @@
-import * as STATICS from "./statics"
+import * as STATICS from "./statics.js"
 
-let _debug = typeof localStorage !== "undefined" && localStorage.getItem("acdl_helper_debug") === "true"
+let _debug = read_debug_flag()
 
 const acdl = gen_acdl()
 
@@ -33,12 +33,29 @@ function message(message, prefix = STATICS.LOG_PREFIX) {
   }
 }
 
+// Read once at module load. Accessing localStorage can throw (sandboxed iframe, storage blocked by browser
+// settings) — unguarded, that aborted loading the whole library. A storage without getItem (Node 25's global)
+// counts as "off" too.
+function read_debug_flag() {
+  try {
+    return (
+      typeof localStorage !== "undefined" &&
+      typeof localStorage.getItem === "function" &&
+      localStorage.getItem("acdl_helper_debug") === "true"
+    )
+  } catch (_e) {
+    return false
+  }
+}
+
 function set_debug(flag) {
   _debug = !!flag
   try {
     if (_debug) localStorage.setItem("acdl_helper_debug", "true")
     else localStorage.removeItem("acdl_helper_debug")
-  } catch (_e) { /* private browsing / disabled storage */ }
+  } catch (_e) {
+    /* private browsing / disabled storage */
+  }
 }
 
 function logger(prefix = "[acdl_helper]") {
@@ -50,8 +67,30 @@ function logger(prefix = "[acdl_helper]") {
   }
 }
 
+// ACDL (2.0.2, verified in AEM) lets an exception in a listener escape push() to the code that pushed (Core
+// collector, project data layer services, components) and skips the later listeners for that event. Every
+// listener of the library is therefore registered through a guard: errors are logged, never rethrown. One
+// guard per handler (a plugin may register the same handler for several events), so removal still works.
+const listener_guards = new WeakMap()
+const listener_logger = logger(STATICS.LOG_PREFIX)
+
+function guarded(event, handler) {
+  if (!is_function(handler)) return handler
+  if (!listener_guards.has(handler)) {
+    listener_guards.set(handler, function (...args) {
+      try {
+        return handler.apply(this, args)
+      } catch (err) {
+        listener_logger.error(`Listener for "${args[0]?.event || event}" threw — caught, not rethrown`, err)
+        return undefined
+      }
+    })
+  }
+  return listener_guards.get(handler)
+}
+
 function gen_acdl() {
-  return Object.freeze({
+  const api = Object.freeze({
     push(data) {
       window.adobeDataLayer = window.adobeDataLayer || []
       window.adobeDataLayer.push(data)
@@ -59,16 +98,39 @@ function gen_acdl() {
 
     add_event_listener(event, handler, options) {
       window.adobeDataLayer = window.adobeDataLayer || []
+      const listener = guarded(event, handler)
       window.adobeDataLayer.push(function (dl) {
-        dl.addEventListener(event, handler, options)
+        dl.addEventListener(event, listener, options)
       })
     },
 
     remove_event_listener(event, handler) {
       window.adobeDataLayer = window.adobeDataLayer || []
+      const listener = listener_guards.get(handler) || handler
       window.adobeDataLayer.push(function (dl) {
-        dl.removeEventListener(event, handler)
+        dl.removeEventListener(event, listener)
       })
+    },
+
+    /**
+     * Register a listener AFTER the current dispatch (macrotask), as xdmtracker's autoTrack does: a listener
+     * registered during acdl_helper's own init dispatch was observed to stop receiving later events in live AEM
+     * (DOCS/FEATURES/xdmtracker-autotrack §2a). `scope: "all"` still replays what was pushed before.
+     * Guarded like every listener. Returns `unsubscribe()`, which also works before the registration ran.
+     */
+    subscribe(event, handler, options) {
+      let state = "pending"
+      const register = () => {
+        if (state !== "pending") return
+        state = "registered"
+        api.add_event_listener(event, handler, options)
+      }
+      if (typeof setTimeout === "function") setTimeout(register, 0)
+      else register()
+      return () => {
+        if (state === "registered") api.remove_event_listener(event, handler)
+        state = "cancelled"
+      }
     },
 
     get_state(reference) {
@@ -78,6 +140,7 @@ function gen_acdl() {
       return window.adobeDataLayer.getState(reference)
     },
   })
+  return api
 }
 
 function execute_once(fn) {

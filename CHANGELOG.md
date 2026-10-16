@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-10-16
+
+_Motivation: a site without Adobe Tags sends its tracking through **JENTIS**, a server-side tag manager whose only documented website input is `_jts.push({...})`. JENTIS cannot read the data layer's **state**, and a Core Components event such as `cmp:click` carries only `eventInfo.path` — title, URL and `@type` live in that state. A bridge has to resolve each event's node, decide what is reported and write JENTIS documents; and because it listens later than the page's first pushes, it must see each event's state **at the event**, not ACDL's current state. Requirements, decisions, review round and browser spikes: [`DOCS/FEATURES/jentis-bridge/`](DOCS/FEATURES/jentis-bridge/README.md). First consumer: Fraport travel._
+
+### Added
+
+- **New plugin `jentis`** — declarative rules per data layer event (`match`, `skip`, `group`, `name`, `value`, `interactive`, `numvalue`, flat `props`, `defaults.props`, `false` = never forwarded) → JENTIS documents in `window._jts`: `{ track: "pageview", … }` + `{ track: "submit" }` once per page, then `{ track: "event", … }`. **Pageview first:** events before it are held and sent right after it; after `options.pageview_timeout` (5000 ms) they are sent with a warning naming the configured `pageview.on`; `pageview: false` for sites that send the pageview elsewhere. **State at the event:** a history cursor folds the `adobeDataLayer` array up to each event (ACDL merge rules, verified in AEM), so replayed events see their own state, not later pushes. Helpers `h.page()`, `h.parent()`, `h.already_shown()` (a click on the active tab), `h.link_type()` (`partner_hosts`), `h.family()` (`families`), `h.matches()`, `h.truncate()`. **Destination-agnostic:** limits of what JENTIS feeds (`max_value_length`, `max_lengths`, `max_name_length`, `max_props`) are optional options, none by default. The config is validated at `init()` (every problem logged with its path, the valid rest runs); with debug mode on, one log line per event (forwarded → document, held, ignored, not forwarded + reason incl. why each rule did not apply, truncated keys, resolver problems); `options.log: false` mutes the per-event lines. Docs: [`src/plugins/jentis/README.md`](src/plugins/jentis/README.md).
+- **Core helpers for plugins — `context.helpers`** (pure, no configuration of their own): `matches(node, test)` (the wildcard matcher of `page` / `catch`, never throws), `resolve_node(event, { get_state })` (the rules of `catch(event).get()` for raw and Launch-wrapped events, on a copy, never throws), `link_type(url, { partner_hosts })` and `family(cmp_or_type, families)`. Existing users move onto them in 1.12.0.
+- **`context.acdl.subscribe(event, handler, options)`** — registers a listener **after** the current dispatch (a listener registered mid-init was observed to miss live events, see 1.9.1) and returns `unsubscribe()`, which also works before the registration ran.
+- **Tests** — core: init isolation, listener guard, debug flag, matcher, resolver, link type (`tests/core-*.test.js`); jentis: validation, history cursor, document building from recorded AEM sequences, lifecycle and the whole plugin against a fake ACDL with replay, log (`tests/jentis-*.test.js`). **388 tests**, green on Node 20 and 25; each new module mutation-checked.
+
+### Fixed
+
+- **A throwing data layer listener broke the code that pushed.** ACDL 2.0.2 (verified in AEM) lets an exception in a listener escape `push()` to the caller (Core collector click handler, project services) and skips the later listeners for that event. Every listener registered through `context.acdl.add_event_listener` is now guarded: logged, never rethrown, `this` kept for `this.getState`, `remove_event_listener` still works with the original handler.
+- **One failing plugin took the whole library down.** `init_plugins` ran inside the dependency-resolved ACDL dispatch without isolation: a plugin whose `impl()` / `init()` / `provider()` threw (or that lacked `impl` / `init`) left `window.acdl_helper` without its API and every other plugin dead. Each plugin is now initialised in isolation — logged and disabled, the rest comes up.
+- **Loading the library could abort where `localStorage` throws** (sandboxed iframe, storage blocked by browser settings): the debug flag was read unguarded at module load. Now guarded; a `localStorage` without `getItem` counts as debug off.
+- **README:** the default of `dependencies` is `[]` (it said `['launch:loaded']`); plugin authors' context (`subscribe`, `helpers`, guarded listeners, init isolation) documented in the README and `src/plugins/_template`.
+
+### Changed
+
+- **Explicit `.js` extensions on all relative imports** in core and plugins, so the core is importable by Node's test runner (webpack output unchanged).
+
+### Backward compatibility
+
+Fully backward compatible. Without `plugins.jentis` the library behaves as 1.10.0: every existing plugin chunk is byte-identical to `release/1.10.0/` — only the main bundle (the core fixes above + the new chunk in the chunk map) changed — and a golden master on a real AEM page (data layer events, page node, tab switch, listener guard, console log — shipped 1.10.0 vs. 1.11.0 injected) was identical. The jentis plugin is a new chunk; projects that list chunks explicitly (an AEM clientlib `js.txt`) must add it.
+
 ## [1.10.0] - 2026-08-27
 
 _Motivation: a project must send its tracking to **two different Adobe Orgs** — Org A for classical Adobe Analytics, Org B for Customer Journey Analytics — and Adobe requires **one Web SDK instance per Org** (unique `orgId` **and** unique `datastreamId` each, or the instances collide on cookies). The plugin was hard-wired to `window.alloy`, so there was no way to express "send this event to that instance too, with a different payload". The data for the second Org is also shaped differently (tenant XDM field groups instead of AA eVars/props/events) and sometimes only a delta of the first — so per-Org definitions and delta support were both needed. Concept, rejected alternatives and reasoning: [`DOCS/FEATURES/xdmtracker-multi-org-targets/`](DOCS/FEATURES/xdmtracker-multi-org-targets/README.md)._

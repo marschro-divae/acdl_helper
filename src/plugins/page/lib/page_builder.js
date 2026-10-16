@@ -1,9 +1,9 @@
-import update_path from "./update_path"
-import repo_path_to_pageId from "./repo_path_to_pageId"
-import repo_path_to_tenant from "./repo_path_to_tenant"
-import repo_path_to_pagename from "./repo_path_to_pagename"
-import template_path_to_pagetype from "./template_path_to_pagetype"
-import campaign_parameter_to_cid from "./campaign_parameter_to_cid"
+import update_path from "./update_path.js"
+import repo_path_to_pageId from "./repo_path_to_pageId.js"
+import repo_path_to_tenant from "./repo_path_to_tenant.js"
+import repo_path_to_pagename from "./repo_path_to_pagename.js"
+import template_path_to_pagetype from "./template_path_to_pagetype.js"
+import campaign_parameter_to_cid from "./campaign_parameter_to_cid.js"
 
 export default function page_builder(event, context) {
   const path = event?.message?.eventInfo?.path || event?.eventInfo?.path

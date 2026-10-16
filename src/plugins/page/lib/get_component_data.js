@@ -1,4 +1,4 @@
-import test_dataLayer_object from "./test_dataLayer_object"
+import test_dataLayer_object from "./test_dataLayer_object.js"
 
 export default function get_component_data(e, resolver) {
   if (!e) return undefined

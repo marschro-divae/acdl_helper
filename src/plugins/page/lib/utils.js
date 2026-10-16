@@ -1,4 +1,4 @@
-import test_dataLayer_object from "./test_dataLayer_object"
+import test_dataLayer_object from "./test_dataLayer_object.js"
 
 export default Object.freeze({
   get_page_data,
