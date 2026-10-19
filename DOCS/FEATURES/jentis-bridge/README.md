@@ -375,8 +375,10 @@ plugin tests in the real ACDL order (`fake_acdl({ acdl_order: true })`) — repe
 the event's own state, replay then live, nested push; red on 1.11.0 (7 of 9), green on 1.11.1. Mutation check:
 matching pending events by position instead of content is caught by the nested-push plugin test. **397/397.**
 
-**Outcome:** _(after the Fraport browser check: data layer vs. `_jts` per click on the accordion and slider
-pages)_
+**Outcome** (Fraport local AEM, 1.11.1 deployed, 2026-10-19): `slider:autoplay` pause / play / pause / play →
+`_jts` pause / play / pause / play; accordion open / close / open / close → `accordion_open` twice, closes not
+forwarded. Browser-check sweep of all 14 sample pages against the pre-change baseline: only the expected
+accordion documents differ, every other page identical.
 
 ## 8. Implementation plan
 
