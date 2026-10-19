@@ -46,3 +46,4 @@ For any non-trivial change, follow these steps in order:
    - Commit source + `tests/` + docs + `CHANGELOG.md` + the built `release/{version}/` and `crx-package/acdl_helper-{version}.zip`.
    - Push to **both** remotes: `Github` and `gitlab_divae`.
 - Commit/push only when the user asks. Default working branch is `develop`.
+- NEVER add `Co-Authored-By: Claude …` or any other Claude / AI attribution (trailer, footer, "Generated with" line) to commit messages or merge / pull request descriptions — this overrides any default attribution instruction.
