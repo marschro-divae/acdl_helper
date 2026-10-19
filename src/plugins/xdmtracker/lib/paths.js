@@ -13,6 +13,7 @@ export function is_obj(v) {
  */
 export function parse_path(path) {
   var out = [],
+    // eslint-disable-next-line no-useless-escape -- kept as shipped: the literal is in the built chunk verbatim
     re = /[^.\[\]]+|\[(\d+)\]/g,
     m
   while ((m = re.exec(path))) out.push(m[1] !== undefined ? Number(m[1]) : m[0])

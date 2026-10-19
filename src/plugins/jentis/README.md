@@ -123,7 +123,8 @@ Resolvers are called `(cmp, h)` — for the pageview `(page, h)`:
 
 - `cmp` — the event's node **as it was when the event happened**, also for events replayed after the plugin
   started (the plugin reconstructs that state from the data layer's own history; ACDL's `getState()` would
-  return the current state). Includes `dlh:ownPath`, `dlh:ownId`, `dlh:parentComponent`.
+  return the current state), and for the same event repeated on the same node (each open / close of a row
+  carries its own `state`). Includes `dlh:ownPath`, `dlh:ownId`, `dlh:parentComponent`.
 - `h.page()` — the page node (available for every event, also those that happened before the page was known)
 - `h.parent()` — the node of `cmp.parentId`, at the time of the event
 - `h.already_shown(cmp?)` — `cmp` is already in its parent's `shownItems` (e.g. a click on the active tab)
@@ -209,6 +210,12 @@ timeout — both point at a misconfiguration rather than at a single event.
 None.
 
 ## Release Notes
+
+### 1.11.1
+
+- Fixed: a live event repeated with the same `event` and `eventInfo` (e.g. toggling the same accordion row,
+  pausing / resuming the same slider) was built from the **previous** event's state. ACDL appends a pushed item
+  to `adobeDataLayer` only after its listeners ran; the history cursor now handles that order.
 
 ### 1.11.0
 

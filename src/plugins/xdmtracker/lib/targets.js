@@ -214,7 +214,7 @@ export function validate_definition_targets(events, targets, logger) {
  * "Explicit beats implicit": for the last two, an explicit overlay entry (even `{}`)
  * reads as "yes, this one too" and wins.
  */
-export function resolve_send_targets(def, targets, logger) {
+export function resolve_send_targets(def, targets, _logger) {
   var entries = is_obj(def) && is_obj(def.targets) ? def.targets : null
   var out = []
 

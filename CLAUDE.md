@@ -24,7 +24,7 @@ Concrete example (this repo, v1.7.0): the docs state that a `decisioning.proposi
 - Match the surrounding file's style and comment density.
 
 ## Testing (required from now on)
-- Test runner: **Node's built-in `node:test`** (zero dependencies). Tests live in **`tests/`** — NOT `test/` (gitignored). Run with `npm test` (`npm run test:watch` while developing).
+- Test runner: **Node's built-in `node:test`** (zero dependencies). Tests live in **`tests/`** — NOT `test/` (gitignored). Run with `npm test` (`npm run test:watch` while developing). Lint with `npm run lint` (ESLint 9 flat config, `eslint.config.js`) — clean before delivery.
 - **Maintain good coverage.** Every behavior change must keep the suite green and add/adjust tests:
   - When changing existing behavior, first write **characterization tests** that lock the current behavior (they must pass before you edit code), then change code, then add tests for the new behavior.
   - Prefer testing the pure functions (`lib/*`) directly; stub `window.alloy` / `context` for plugin-level tests.

@@ -61,7 +61,7 @@ function parseDataLayer(element) {
   const parseJSON = (maybeJson) => {
     try {
       return JSON.parse(maybeJson)
-    } catch (err) {
+    } catch (_err) {
       return undefined
     }
   }

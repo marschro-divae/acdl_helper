@@ -2,8 +2,9 @@
 
 ## 0. Status & links
 
-- Status: **1.11.0 built** (2026-10-16, branch `feature/jentis-bridge`, not yet committed or pushed). Phases 0–6 done;
-  Phase 7 (Fraport integration) open — see §8. Follow-up 1.12.0 in BACKLOG.
+- Status: **1.11.0 shipped** (2026-10-16). Phases 0–6 done; Phase 7 (Fraport integration) open — see §8.
+  **1.11.1** (2026-10-19): repeated identical live events got the previous event's state — §7.6. Follow-up 1.12.0
+  in BACKLOG.
 - Backlog: FEATURES → "jentis plugin".
 - First consumer: Fraport travel (AEM, JENTIS + GA4, no Adobe Tags). Project-side mapping and
   project-specific rules live there: `fraport-travel/docs/tracking/jentis-mapping.md`.
@@ -331,6 +332,51 @@ deep link), not on load; the page's own `cmp:show` is excluded anyway. Keep the 
 
 Decided (Martin, 2026-10-16): **split accepted** (1.11.0 / 1.12.0), **7 accepted** — `families` and
 `partner_hosts` are `jentis` configuration, the helpers are pure core functions handed out unbound.
+
+### 7.6 Live events in the history cursor (1.11.1, 2026-10-19)
+
+**Symptom** (Fraport, local AEM, first two consumers of state-dependent rules): the data layer was right, the
+JENTIS documents lagged one event behind whenever the **same** event repeated on the **same** node.
+`slider:autoplay` pause / play / pause → `_jts` `slider_autoplay` pause / **pause** / **play**. An accordion rule
+with `skip: (cmp) => cmp.state !== "open"` sent `accordion_open` for every close as well. Rules that read only
+static node data (`cmp:click` on links) were unaffected, which is why no earlier ticket saw it.
+
+**Investigation — proved, not assumed:**
+
+- ACDL 2.0.2's `push` processes each item first — state update **and listeners** — and only then calls
+  `Array.prototype.push` (source: `n.push = function (t) { … u(e) … return Array.prototype.push.apply(this, r) }`).
+  Probe on the AEM page: inside a listener `adobeDataLayer.length` was 41, after the push 42, and the last item
+  was not yet the pushed one.
+- §7.5 (a) had already observed that a live listener runs *inside* the push; the decision was "replayed events
+  reconstruct from the array, **live events use `this.getState`**". Phase 3 implemented **one** cursor for both,
+  with `this.getState()` only as fallback, and its header assumed "the array keeps every push, in push order" at
+  delivery time. That holds for replayed events, not for live ones.
+- Consequence: a live event is not in the array yet → `state_at` misses (the fallback `this.getState()` is
+  correct, ACDL updated the state before the listeners), but the cursor has moved to the end. The item is
+  appended right after. The **next** event with the same `event` + `eventInfo` scans from there, matches the
+  previous item and is built from its state.
+- Why the tests did not catch it: `tests/jentis-history.test.js` "live: the array grows between calls" appends
+  the item **before** asking; the fake ACDL in `tests/jentis-sender.test.js` and the one in Fraport's spec
+  append before delivering. All three model the wrong order.
+
+**Fix:** the cursor remembers a missed event as **pending** — a miss can only be a live event (replayed events
+are in the array by construction). When its item appears, it is folded into the state like any other item but
+**never matched**; pending events are found by content, not by position, because a listener that pushes itself
+(nested push) gets its item appended *before* the outer one. Live events keep using `this.getState()`, as
+decided in §7.5. No config, no API change.
+
+**What didn't work / not done:** folding the listener's copy of the event into the cursor state on a miss
+(would make the cursor self-sufficient) — rejected: it relies on ACDL passing the full pushed item to listeners,
+which §7.5 did not verify, and `this.getState()` is already exact for live events.
+
+**Tests:** characterization first — the 15 existing cursor tests and the plugin tests (item appended before
+delivery, which is also how a replayed event finds its item) stay green unchanged. New: 5 cursor tests and 4
+plugin tests in the real ACDL order (`fake_acdl({ acdl_order: true })`) — repeated identical events, a `skip` on
+the event's own state, replay then live, nested push; red on 1.11.0 (7 of 9), green on 1.11.1. Mutation check:
+matching pending events by position instead of content is caught by the nested-push plugin test. **397/397.**
+
+**Outcome:** _(after the Fraport browser check: data layer vs. `_jts` per click on the accordion and slider
+pages)_
 
 ## 8. Implementation plan
 

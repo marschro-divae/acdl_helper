@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.1] - 2026-10-19
+
+_Motivation: on the first consumer's local AEM (Fraport), JENTIS documents lagged one event behind whenever the same event repeated on the same node — `slider:autoplay` pause / play / pause reached `_jts` as pause / pause / play, and an accordion rule skipping closes forwarded every close as an open. Investigation and the rejected alternative: [`DOCS/FEATURES/jentis-bridge/` §7.6](DOCS/FEATURES/jentis-bridge/README.md)._
+
+### Fixed
+
+- **jentis: a repeated identical live event got the previous event's state.** ACDL 2.0.2 updates the state and calls the listeners *before* it appends the pushed item to `adobeDataLayer` (verified in its source and on the AEM page). The history cursor missed every live event (correctly falling back to `this.getState()`) but moved past the end, so the next event with the same `event` + `eventInfo` matched the previous item and was built from its state. A missed event now stays pending: its item is folded into the cursor state when it appears, never matched. Pending events are matched by content, so a nested push (a listener pushing during the dispatch, appended before the outer item) is handled too. Rules reading only static node data (`cmp:click` on links) were not affected.
+- **Tests modelled the wrong order.** The history test for live events and the fake ACDL of the plugin tests appended the item before delivering it. New tests run the cursor and the whole plugin in the real ACDL order: repeated identical events, a `skip` on the event's own state, replay followed by live events, nested pushes. **397 tests.**
+
+### Changed
+
+- **ESLint runs again** (tooling only): ESLint 9 ignores `.eslintrc.json`, so linting had silently stopped. Replaced by a flat `eslint.config.js` with the same rules (`eslint:recommended` + `prettier`, browser globals; Node globals for `tests/` and build configs; `_`-prefixed arguments / caught errors and rest siblings may be unused), `@eslint/js` and `globals` as devDependencies, new script `npm run lint`. The three findings in shipped code are resolved without changing the built chunks: two unused names `_`-prefixed (renamed away by the minifier), one regex escape in `xdmtracker/lib/paths.js` kept verbatim with a disable comment.
+
+### Backward compatibility
+
+Fully backward compatible; no configuration or API change. Only the `jentis` chunk and the main bundle (version string) change.
+
 ## [1.11.0] - 2026-10-16
 
 _Motivation: a site without Adobe Tags sends its tracking through **JENTIS**, a server-side tag manager whose only documented website input is `_jts.push({...})`. JENTIS cannot read the data layer's **state**, and a Core Components event such as `cmp:click` carries only `eventInfo.path` — title, URL and `@type` live in that state. A bridge has to resolve each event's node, decide what is reported and write JENTIS documents; and because it listens later than the page's first pushes, it must see each event's state **at the event**, not ACDL's current state. Requirements, decisions, review round and browser spikes: [`DOCS/FEATURES/jentis-bridge/`](DOCS/FEATURES/jentis-bridge/README.md). First consumer: Fraport travel._

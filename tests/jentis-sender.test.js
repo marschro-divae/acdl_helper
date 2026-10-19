@@ -240,7 +240,10 @@ test("_jts is looked up at every push (JENTIS may replace the array)", () => {
 
 // ---------- Part 2: the plugin against a fake ACDL ----------
 
-function fake_acdl() {
+// `acdl_order: true` — the real ACDL 2.0.2 order (feature doc §7.6): state update and listeners first, the item
+// is appended to the array AFTER the listeners ran. Without it the item is appended first (how the tests below
+// were written; it is also how a replayed event finds its item).
+function fake_acdl({ acdl_order = false } = {}) {
   const listeners = []
   let state = {}
   const dl = {
@@ -265,10 +268,11 @@ function fake_acdl() {
   }
   array.push = (item) => {
     if (typeof item === "function") return item(dl)
-    native_push.call(array, item)
+    if (!acdl_order) native_push.call(array, item)
     const { event, eventInfo, ...data } = item
     state = merge(state, data)
     if (event) for (const l of listeners.slice()) deliver(l, item)
+    if (acdl_order) native_push.call(array, item)
   }
   return { array, dl }
 }
@@ -432,4 +436,95 @@ test("plugin: options.log false mutes the per-event log, not the validation prob
   assert.deepEqual(window._jts, [PAGEVIEW_DOC, { track: "submit" }, CLICK_DOC], "sending is unaffected")
   assert.equal(logger.calls.success.length + logger.calls.info.length, 0)
   assert.equal(logger.calls.error.length, 1, "the invalid rule is still reported")
+})
+
+// ---------- the plugin against the real ACDL order: listeners run before the item is appended (§7.6) ----------
+
+const ROW_STATE = {
+  page: STATE.page,
+  component: {
+    "slider-1": { "@type": "site/components/slider", "dc:title": "Offers" },
+    "row-1": { "@type": "site/components/accordion/row", "dc:title": "First Row" },
+  },
+}
+const STATEFUL_CONFIG = {
+  ...CONFIG,
+  events: {
+    "slider:autoplay": { group: "slider", name: "slider_autoplay", value: (cmp) => cmp.state },
+    "accordion:toggle": { skip: (cmp) => cmp.state !== "open", group: "accordion", name: "accordion_open" },
+  },
+}
+const autoplay = (state) => ({
+  event: "slider:autoplay",
+  eventInfo: { reference: "component.slider-1" },
+  component: { "slider-1": { state } },
+})
+const toggle = (state) => ({
+  event: "accordion:toggle",
+  eventInfo: { reference: "component.row-1" },
+  component: { "row-1": { state } },
+})
+const events_sent = () => window._jts.filter((d) => d.track === "event").map((d) => `${d.name}:${d.value}`)
+
+async function start_with_acdl_order() {
+  fake = fake_acdl({ acdl_order: true })
+  window.adobeDataLayer = fake.array
+  window.adobeDataLayer.push(ROW_STATE)
+  window.adobeDataLayer.push(page_load())
+  start_plugin(STATEFUL_CONFIG)
+  await tick()
+}
+
+test("plugin (ACDL order): repeated identical events each carry their own state", async () => {
+  await start_with_acdl_order()
+  window.adobeDataLayer.push(autoplay("pause"))
+  window.adobeDataLayer.push(autoplay("play"))
+  window.adobeDataLayer.push(autoplay("pause"))
+  assert.deepEqual(events_sent(), ["slider_autoplay:pause", "slider_autoplay:play", "slider_autoplay:pause"])
+})
+
+test("plugin (ACDL order): a skip reading the event's own state skips exactly those events", async () => {
+  await start_with_acdl_order()
+  window.adobeDataLayer.push(toggle("open"))
+  window.adobeDataLayer.push(toggle("close"))
+  window.adobeDataLayer.push(toggle("open"))
+  window.adobeDataLayer.push(toggle("close"))
+  assert.deepEqual(events_sent(), ["accordion_open:First Row", "accordion_open:First Row"])
+})
+
+test("plugin (ACDL order): replayed events, then live ones — each with its own state", async () => {
+  fake = fake_acdl({ acdl_order: true })
+  window.adobeDataLayer = fake.array
+  window.adobeDataLayer.push(ROW_STATE)
+  window.adobeDataLayer.push(autoplay("pause")) // before the plugin starts — replayed
+  window.adobeDataLayer.push(autoplay("play"))
+  window.adobeDataLayer.push(page_load())
+  start_plugin(STATEFUL_CONFIG)
+  await tick()
+  window.adobeDataLayer.push(autoplay("pause")) // live
+  window.adobeDataLayer.push(autoplay("play"))
+  assert.deepEqual(events_sent(), [
+    "slider_autoplay:pause",
+    "slider_autoplay:play",
+    "slider_autoplay:pause",
+    "slider_autoplay:play",
+  ])
+})
+
+test("plugin (ACDL order): a listener that pushes during the dispatch (nested push)", async () => {
+  await start_with_acdl_order()
+  // another script reacts to the toggle by pausing the slider — its item is appended before the toggle's
+  fake.dl.addEventListener("accordion:toggle", () => window.adobeDataLayer.push(autoplay("pause")))
+  window.adobeDataLayer.push(toggle("open"))
+  window.adobeDataLayer.push(autoplay("play"))
+  window.adobeDataLayer.push(toggle("close"))
+  window.adobeDataLayer.push(toggle("open"))
+  assert.deepEqual(events_sent(), [
+    "accordion_open:First Row",
+    "slider_autoplay:pause",
+    "slider_autoplay:play",
+    "slider_autoplay:pause", // nested, from the close (the close itself is skipped)
+    "accordion_open:First Row",
+    "slider_autoplay:pause", // nested, from the last open
+  ])
 })

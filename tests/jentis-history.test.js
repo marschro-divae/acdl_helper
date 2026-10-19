@@ -149,3 +149,68 @@ test("Core tabs: at cmp:show the tabs node still holds the PREVIOUS shownItems",
   const state = cursor.state_at({ event: "cmp:show", eventInfo: { path: "component.tabs-item-b" } })
   assert.deepEqual(get_path(state, "component.tabs").shownItems, ["tabs-item-a"])
 })
+
+// ---------- live events: ACDL calls the listeners BEFORE it appends the item (feature doc §7.6) ----------
+
+// ACDL 2.0.2: `push` updates the state, calls the listeners, and only then `Array.prototype.push`. A live
+// listener therefore asks for an event whose item is not in the array yet.
+function push_live(items, cursor, item) {
+  const result = cursor.state_at(JSON.parse(JSON.stringify(item)))
+  items.push(item)
+  return result
+}
+
+const toggle = (state) => ({
+  event: "accordion:toggle",
+  eventInfo: { reference: "component.row" },
+  component: { row: { state } },
+})
+
+test("live: an event whose item is not in the array yet → undefined (the plugin uses this.getState())", () => {
+  const items = [{ component: { row: { "dc:title": "Row" } } }]
+  const cursor = create_history_cursor(() => items)
+  assert.equal(push_live(items, cursor, toggle("open")), undefined)
+})
+
+test("live: a repeated identical event is never matched to the previous one's item", () => {
+  const items = [{ component: { row: { "dc:title": "Row" } } }]
+  const cursor = create_history_cursor(() => items)
+  push_live(items, cursor, toggle("open"))
+  assert.equal(push_live(items, cursor, toggle("close")), undefined, "not the state of the open")
+  assert.equal(push_live(items, cursor, toggle("open")), undefined, "not the state of the close")
+})
+
+test("live: the items of live events are still folded — a later lookup sees their data", () => {
+  const items = [{ component: { row: { "dc:title": "Row" } } }]
+  const cursor = create_history_cursor(() => items)
+  push_live(items, cursor, toggle("open"))
+  push_live(items, cursor, toggle("close"))
+  items.push({ component: { row: { extra: 1 } } }, { event: "x:found", eventInfo: { path: "component.row" } })
+  const state = cursor.state_at({ event: "x:found", eventInfo: { path: "component.row" } })
+  assert.deepEqual(get_path(state, "component.row"), { "dc:title": "Row", "state": "close", "extra": 1 })
+})
+
+test("live: a nested push (inner item appended before the outer one) is folded, neither is matched", () => {
+  const items = [{ component: { a: { v: 0 } } }]
+  const cursor = create_history_cursor(() => items)
+  const outer = { event: "outer:evt", eventInfo: { path: "component.a" }, component: { a: { v: 1 } } }
+  const inner = { event: "inner:evt", eventInfo: { path: "component.a" }, component: { a: { w: 2 } } }
+  // outer's listener pushes inner: both are asked for, then ACDL appends inner first, outer last
+  assert.equal(cursor.state_at(JSON.parse(JSON.stringify(outer))), undefined)
+  assert.equal(cursor.state_at(JSON.parse(JSON.stringify(inner))), undefined)
+  items.push(inner, outer)
+  assert.equal(push_live(items, cursor, { ...outer, component: { a: { v: 3 } } }), undefined)
+  assert.equal(push_live(items, cursor, { ...inner, component: { a: { w: 4 } } }), undefined)
+  items.push({ event: "x:found", eventInfo: { path: "component.a" } })
+  const state = cursor.state_at({ event: "x:found", eventInfo: { path: "component.a" } })
+  assert.deepEqual(get_path(state, "component.a"), { v: 3, w: 4 })
+})
+
+test("replay, then live: replayed events match their items, later live events never do", () => {
+  const items = [{ component: { row: { "dc:title": "Row" } } }, toggle("open"), toggle("close")]
+  const cursor = create_history_cursor(() => items)
+  assert.equal(get_path(cursor.state_at(toggle("open")), "component.row").state, "open")
+  assert.equal(get_path(cursor.state_at(toggle("close")), "component.row").state, "close")
+  assert.equal(push_live(items, cursor, toggle("open")), undefined)
+  assert.equal(push_live(items, cursor, toggle("close")), undefined)
+})

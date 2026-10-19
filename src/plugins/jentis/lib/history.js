@@ -7,15 +7,25 @@
  * - a listener receives a COPY of the pushed item — its position cannot be found by identity;
  * - the `adobeDataLayer` array keeps every data and event push (not function pushes), in push order, and
  *   events are delivered in that order (live and replayed);
+ * - `push` updates the state and calls the listeners BEFORE it appends the item to the array (§7.6): a live
+ *   event is not in the array yet when it is delivered — a replayed one is;
  * - merge rules: plain objects merge deeply, arrays merge by index, `undefined` and `null` delete the key.
  *
  * The cursor walks the array forward once, folding the state incrementally, and for each event moves on to
  * the next array item with the same `event` and `eventInfo`. Other scripts' pushes in between do not disturb
  * it; identical events are matched in order.
+ *
+ * A miss means a live event: the caller uses `this.getState()`, which is exact then. The event stays
+ * **pending** — when its item is appended, it is folded but never matched, or the next identical event would
+ * get this one's state. Pending events are found by content, not by position: a listener that pushes itself
+ * (nested push) has its item appended before the outer one.
  */
+const MAX_PENDING = 100 // only reached if another script rewrites the array — then items never show up
+
 export function create_history_cursor(get_items) {
   let position = 0 // next array index not yet folded
   let state = {}
+  const pending = [] // live events whose item was not in the array yet
 
   return {
     /** State right after `event` was pushed (its own data included), or `undefined` if not found. */
@@ -25,7 +35,13 @@ export function create_history_cursor(get_items) {
         const item = items[i]
         state = apply_item(state, item)
         position = i + 1
-        if (same_event(item, event)) return state
+        const live = pending.findIndex((pending_event) => same_event(item, pending_event))
+        if (live >= 0) pending.splice(live, 1)
+        else if (same_event(item, event)) return state
+      }
+      if (is_plain_object(event)) {
+        pending.push(event)
+        if (pending.length > MAX_PENDING) pending.shift()
       }
       return undefined
     },
